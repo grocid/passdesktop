@@ -79,44 +79,44 @@ func UnlockToken(ciphertext string, password string, nonce string, salt string) 
 
 func EncryptGCM(plaintext []byte, key []byte) ([]byte, []byte, error) {
     // Create a key data structure
-  	block, err := aes.NewCipher(key)
-  	if err != nil {
-  		  return []byte{}, []byte{}, err
-  	}
+    block, err := aes.NewCipher(key)
+    if err != nil {
+        return []byte{}, []byte{}, err
+    }
     // Create a random nonce with 8 * 12 bits of entropy...
-  	nonce := make([]byte, 12)
+    nonce := make([]byte, 12)
     // ...using a CSPRNG...
-  	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-  		  return []byte{}, []byte{}, err
-  	}
+    if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+        return []byte{}, []byte{}, err
+    }
     // ...and try to encrypt...
-  	aesgcm, err := cipher.NewGCM(block)
+    aesgcm, err := cipher.NewGCM(block)
     // ...if we fail, we return an error...
-  	if err != nil {
-  		  return []byte{}, []byte{}, err
-  	}
+    if err != nil {
+        return []byte{}, []byte{}, err
+    }
     // Return ciphertext to caller
-  	return aesgcm.Seal(nil, nonce, plaintext, nil), nonce, nil
+    return aesgcm.Seal(nil, nonce, plaintext, nil), nonce, nil
 
 }
   
 func DecryptGCM(ciphertext []byte, key []byte, nonce []byte) ([]byte, error) {
     // Create a key data structure
-  	block, err := aes.NewCipher(key)
-  	if err != nil {
-  		  return []byte{}, err
-  	}
+    block, err := aes.NewCipher(key)
+    if err != nil {
+        return []byte{}, err
+    }
     // Initialize cipher...
-  	aesgcm, err := cipher.NewGCM(block)
-  	if err != nil {
-  		  return []byte{}, err
-  	}
+    aesgcm, err := cipher.NewGCM(block)
+    if err != nil {
+        return []byte{}, err
+    }
     // ...and try to decrypt...
-  	plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
+    plaintext, err := aesgcm.Open(nil, nonce, ciphertext, nil)
     // ...no errors, hopefully...
-  	if err != nil {
-  		  return []byte{}, err
-  	}
+    if err != nil {
+        return []byte{}, err
+    }
     // ...otherwise return dat shit to caller
-  	return plaintext, nil
+    return plaintext, nil
 }
