@@ -1,0 +1,96 @@
+body {
+    background-size: cover;
+    background-position: center;
+    color: white;
+    overflow: hidden; 
+}
+
+.WindowLayout {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    word-wrap: break-word;
+}
+
+.SearchLayout {
+    padding: 20pt;
+    padding-right: 20pt;
+    padding-left: 10pt;
+    padding-top: 20pt; 
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+.PasswordEntryLayout {
+    padding: 20pt;
+    padding-right: 20pt;
+    padding-left: 10pt;
+    padding-top: 20pt; 
+    -webkit-user-select: none;
+    pointer-events: none;
+}
+
+::-webkit-scrollbar { 
+    display: none; 
+}
+
+h1 {
+    font-weight: 700; 
+    font-size: 32px;
+}
+
+h2 {
+    font-weight: 700; 
+    font-size: 18px;
+}
+
+h3 {
+    font-weight: 700; 
+    font-size: 16px;
+}
+
+div.image {
+    content:url(../lock.png);
+    max-width:  100px;
+    max-height: 100px;
+    margin-top: 20px;
+    padding: 100px;
+}​
+
+.selectable {
+    -webkit-user-select: auto;
+    pointer-events: auto;
+}
+
+.clickable {
+    pointer-events: auto;
+}
+
+a {
+    color: white;
+}
+
+a:link {
+    text-decoration: none;
+}
+
+input {
+    width: 100%;
+    padding: 5pt;
+    border: 0;
+    outline: none;
+    font-size: 18px;
+    background: rgba(30, 34, 37, 0.2);
+    color: white; 
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+    pointer-events: auto;
+    -webkit-user-select: auto;
+}
+
+input:focus {
+    background: rgba(30, 34, 37, 0.25);
+}

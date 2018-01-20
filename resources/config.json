@@ -1,0 +1,9 @@
+{
+	"encrypted": {
+		"token": "c18491d7e0f13f63fcb3da26262ad3dca0db74d745ea87f6c904a1a79833eb426d995e84ab53643f825b5eb38333638188c2f8b1",
+		"nonce": "8d6f3c526d6b5ada9a95d3b0",
+		"salt": "b8ce52956692a0443fc50f463a2bb2b6df8f9fa339ca87a32c1833290644a8f5"
+	},
+	"host": "vps.grocid.net",
+	"port": "8001"
+}
