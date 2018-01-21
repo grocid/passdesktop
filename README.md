@@ -56,10 +56,14 @@ The file `config.json` is a file of the format
 To get the encrypted part, you need to invoke the function `LockToken (plaintext string, password string)` in `crypto.go`:
 
 ```
-	LockToken("your token", "your master password")
+LockToken("your token", "your master password")
 ```
 
 and put these into the JSON.
+
+## How to sync between devices
+
+If you created an App with macpack, then you can simply copy the App, because `ca.crt` and `config.json` will be included. Otherwise these has two files needs to be copied as well. Even though the token in `config.json` is encrypted, I suggest to not store the config on insecure media like Dropbox or unencrypted mail. 
 
 ## Screenshot
 
