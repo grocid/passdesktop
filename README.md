@@ -86,8 +86,8 @@ Let the contents of `/etc/consul.d/bootstrap/config.json` be
     "datacenter": "pass",
     "data_dir": "/var/consul",
     "encrypt": "<secret>",
-    "ca_file": "/etc/consul.d/ssl/ca.cert",
-    "cert_file": "/etc/consul.d/ssl/consul.cert",
+    "ca_file": "/etc/consul.d/ssl/ca.crt",
+    "cert_file": "/etc/consul.d/ssl/consul.crt",
     "key_file": "/etc/consul.d/ssl/consul.key",
     "verify_incoming": true,
     "verify_outgoing": true,
@@ -112,7 +112,7 @@ where `/etc/vault.d/config.json` contains
     "listener": {
         "tcp": {
             "address": "127.0.0.1:8200",
-            "tls_cert_file": "/etc/vault.d/ssl/vault.cert",
+            "tls_cert_file": "/etc/vault.d/ssl/vault.crt",
             "tls_key_file": "/etc/vault.d/ssl/vault.key",
             "tls_disable": 0
         }
