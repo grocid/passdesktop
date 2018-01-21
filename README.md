@@ -16,15 +16,26 @@ The program is fairly short and easily auditable, if anyone feels encouraged to 
 
 ## Not implemented...
 
- - Generation of keys (locally)
+ - Generation of master password (locally)
  - Generation of new accounts
- - Changing passwords
- - Deletion of accounts
+ - Changing account details remotely (username and password)
+ - Remote deletion of accounts
  - Mutual authentication as an option for communicating with Vault
 
-These, quite essential, features are of course already supported in the CLI.
+These, quite essential, features are of course already supported in [pass](https://github.com/grocid/pass). 
 
-## Possible leaks
+## Seurity considerations
+
+ - To use mutual authentication. This requires each accessor/user to have a valid private key. Private key can be encrypted with master password.
+ - Using [fw](https://github.com/grocid/fw) to only allow white-listed users. Requires the user to authenticate with Google Authenticator to white list its IP address. Makes it harder for attackers, but does not yield any real security.
+ - To use root token or regular tokens: when sharing a server with multiple users and associated (disjoint) storage areas, different tokens is needed. In even in single-user mode, use of root token is not recommended.
+ - Trusting a third-party server. The holder of the root token (or a group/individual holding of the unseal keys) will be able to read all data stored in Vault.
+
+### How to sync between devices
+
+If you created an App with macpack, then you can simply copy the App, because `ca.crt` and `config.json` will be included. Otherwise these two files need to be copied as well. Even though the token in `config.json` is encrypted, I suggest not storing the config on insecure media like Dropbox or unencrypted mail.
+
+### Possible leaks
 
 When an Apple computer goes into hibernation (not regular sleep), in-memory contents are transferred to disk. I am not entirely sure if the disk data is encrypted if you are not running FileVault. The token could theoretically be scraped here.
 
@@ -61,10 +72,6 @@ LockToken("your token", "your master password")
 ```
 
 and put these into the JSON.
-
-## How to sync between devices
-
-If you created an App with macpack, then you can simply copy the App, because `ca.crt` and `config.json` will be included. Otherwise these two files need to be copied as well. Even though the token in `config.json` is encrypted, I suggest not storing the config on insecure media like Dropbox or unencrypted mail.
 
 ## Screenshot
 
