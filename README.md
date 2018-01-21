@@ -1,4 +1,4 @@
-# Pass for macOS
+# Pass Desktop for macOS
 
 Pass is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Vault](https://www.vaultproject.io), where all accounts with associated usernames and passwords are stored.
 
