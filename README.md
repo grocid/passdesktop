@@ -8,7 +8,7 @@ and
 ```token := AES-GCM-Decrypt(encrypted token, key, nonce)```. 
 `token` is kept in memory only.
 
-The program is fairly short and easily auditable, if anyone want to do it.
+The program is fairly short and easily auditable, if anyone feels encouraged to do it.
 
 ## Screenshot
 
