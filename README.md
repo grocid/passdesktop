@@ -13,3 +13,5 @@ The program is fairly short and easily auditable, if anyone want to do it.
 ## Screenshot
 
 ![Pass](pass.gif)
+
+Note: the passwords shown are of course fully working. Do not try to use them!
