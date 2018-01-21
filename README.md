@@ -3,14 +3,15 @@
 Pass is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Vault](https://www.vaultproject.io), where all accounts with associated usernames and passwords are stored.
 
 Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with AES-GCM-256. The encryption key is derived as 
-
-```key := PBKDF2(password, salt)``` 
-
+```
+key := PBKDF2(password, salt)
+```
 and 
+```
+token := AES-GCM-Decrypt(encrypted token, key, nonce).
+```
 
-```token := AES-GCM-Decrypt(encrypted token, key, nonce).```
-
-`token` is kept in memory only.
+The decrypted `token` is kept in memory only.
 
 ![Decrypting token](decryptingtoken.png)
 
@@ -51,10 +52,8 @@ go build
 which creates a standalone executable. To build a real .App, I suggest using [macpack](https://github.com/murlokswarm/macpack).
 
 The application will try to load your CA certificate `ca.crt`, located in the same folder as the executeable, along with `config.json`.
-
 The file `ca.crt` will be used to authenticate the server you are running Vault on. When you setup your server, you generated a CA. This is the file you need.
-
-The file `config.json` is a file of the format
+The configuration `config.json` is a file of the format
 
 ```
 {
@@ -67,14 +66,65 @@ The file `config.json` is a file of the format
 	"port": "8001"
 }
 ```
-
 To get the encrypted part, you need to invoke the function `LockToken (plaintext string, password string)` in `crypto.go`:
-
 ```
 LockToken("your token", "your master password")
 ```
-
 and put these into the JSON.
+
+## Setting up the backend
+
+To get Pass working, you need to install and configure Vault on the remote server. First, start the storage backend for Vault. This can be SQL, but I would recommend [Consul](https://www.consul.io). Start Consul as follows:
+```
+consul agent -server -config-dir=/etc/consul.d/bootstrap/ > /dev/null 2>&1 &
+```
+Let the contents of `/etc/consul.d/bootstrap/config.json` be
+```
+{
+    "bootstrap": true,
+    "server": true,
+    "datacenter": "pass",
+    "data_dir": "/var/consul",
+    "encrypt": "<secret>",
+    "ca_file": "/etc/consul.d/ssl/ca.cert",
+    "cert_file": "/etc/consul.d/ssl/consul.cert",
+    "key_file": "/etc/consul.d/ssl/consul.key",
+    "verify_incoming": true,
+    "verify_outgoing": true,
+    "log_level": "INFO",
+    "enable_syslog": false
+}
+```
+Then, Vault can be started in the following way.
+```
+vault server -config=/etc/vault.d/config.json > /dev/null 2>&1 &
+```
+where `/etc/vault.d/config.json` contains
+```
+{
+    "storage": {
+        "consul": {
+            "address": "127.0.0.1:8500",
+            "advertise_addr": "https://127.0.0.1:8200",
+            "path": "vault"
+        }
+    },
+    "listener": {
+        "tcp": {
+            "address": "127.0.0.1:8200",
+            "tls_cert_file": "/etc/vault.d/ssl/vault.cert",
+            "tls_key_file": "/etc/vault.d/ssl/vault.key",
+            "tls_disable": 0
+        }
+    }
+}
+```
+Vault binds to `127.0.0.1`, so we need fw to access it (if you do not want to use fw, then bind the listener to `0.0.0.0:8001`). We can start it as
+```
+./fw 0.0.0.0:8001 127.0.0.1:8200 2>&1 &
+```
+
+The more proper way to start Consul, Vault and fw would be to create an init.d or systemd service, but this is fine for testing purposes.
 
 ## Screenshot
 
