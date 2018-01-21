@@ -10,6 +10,15 @@ and
 
 The program is fairly short and easily auditable, if anyone feels encouraged to do it.
 
+## Not implemented...
+
+ - Generation of keys (locally)
+ - Generation of new accounts
+ - Changing passwords
+ - Deletion of accounts
+
+These, quite essential, features are of course already supported in the CLI.
+
 ## Screenshot
 
 ![Pass](pass.gif)
