@@ -12,6 +12,8 @@ and
 
 `token` is kept in memory only.
 
+![Decrypting token](decryptingtoken.png)
+
 The program is fairly short and easily auditable, if anyone feels encouraged to do it.
 
 ## Not implemented...
