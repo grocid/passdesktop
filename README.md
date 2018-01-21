@@ -28,7 +28,7 @@ These, quite essential, features are of course already supported in [pass](https
 
  - To use mutual authentication. This requires each accessor/user to have a valid private key. Private key can be encrypted with master password.
  - Using [fw](https://github.com/grocid/fw) to only allow white-listed users. Requires the user to authenticate with Google Authenticator to white list its IP address. Makes it harder for attackers, but does not yield any real security.
- - To use root token or regular tokens: when sharing a server with multiple users and associated (disjoint) storage areas, different tokens is needed. In even in single-user mode, use of root token is not recommended.
+ - To use root token or regular tokens: when sharing a server with multiple users and associated (disjoint) storage areas, different tokens are needed and, hence, root token cannot be used. In even in single-user mode, use of root token is not recommended.
  - Trusting a third-party server. The holder of the root token (or a group/individual holding of the unseal keys) will be able to read all data stored in Vault.
 
 ### How to sync between devices
