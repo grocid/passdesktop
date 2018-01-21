@@ -63,7 +63,7 @@ and put these into the JSON.
 
 ## How to sync between devices
 
-If you created an App with macpack, then you can simply copy the App, because `ca.crt` and `config.json` will be included. Otherwise these two files needs to be copied as well. Even though the token in `config.json` is encrypted, I suggest to not store the config on insecure media like Dropbox or unencrypted mail.
+If you created an App with macpack, then you can simply copy the App, because `ca.crt` and `config.json` will be included. Otherwise these two files need to be copied as well. Even though the token in `config.json` is encrypted, I suggest not storing the config on insecure media like Dropbox or unencrypted mail.
 
 ## Screenshot
 
