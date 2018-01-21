@@ -32,6 +32,8 @@ These, quite essential, features are of course already supported in [pass](https
  - Using [fw](https://github.com/grocid/fw) to only allow white-listed users. Requires the user to authenticate with Google Authenticator to white list its IP address. Makes it harder for attackers, but does not yield any real security.
  - To use root token or regular tokens: when sharing a server with multiple users and associated (disjoint) storage areas, different tokens are needed and, hence, root token cannot be used. In even in single-user mode, use of root token is not recommended.
  - Trusting a third-party server. The holder of the root token (or a group/individual holding of the unseal keys) will be able to read all data stored in Vault.
+ - PBKDF2 computes 4096 iterations of SHA-256. If the password has a lot lower entropy than 256 bits, then the iteration count need to be increased considerably.
+ - Trusting third-party server providers. To be accessible from anywhere, the Vault server can obviously be put on a VPS. However, Vault is quite light weight and can, for a limited amount of users, be run on a mere Raspberry Pi gen A. I would suggest that each user runs Vault on their own Raspberry Pi.
 
 ### How to sync between devices
 
