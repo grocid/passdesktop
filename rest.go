@@ -51,7 +51,7 @@ type VaultResponseList struct {
     } `json:"data"`
 }
 
-func DoRequest(s string) (string, string) {
+func DoGetRequest(s string) (string, string) {
     // Do a GET for the specified entry...
     req, err := http.NewRequest("GET", entryPoint + "/" + s, nil)
     req.Header.Add("X-Vault-Token", decryptedToken)
@@ -71,7 +71,7 @@ func DoRequest(s string) (string, string) {
     return r.Data.Password, r.Data.Username 
 }
 
-func DoList(s string) []string {
+func DoListRequest(s string) []string {
     // Do a LIST to get all entries...
     req, err := http.NewRequest("LIST", entryPoint, nil)
     req.Header.Add("X-Vault-Token", decryptedToken)

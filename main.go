@@ -60,6 +60,7 @@ func newMainWindow() app.Contexter {
 		Width:          300,
 		Height:         480,
 		Vibrancy:       app.VibeUltraDark,
+		//Vibrancy:       app.VibeMediumLight,
 		TitlebarHidden: true,
 		FixedSize:      true,
 		OnClose: func() bool {

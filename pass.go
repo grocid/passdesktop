@@ -37,7 +37,6 @@ import (
     "io/ioutil"
     "crypto/x509"
     "crypto/tls"
-    "strings"
     "github.com/murlokswarm/app"
 )
 
@@ -49,12 +48,23 @@ var config Config
 
 
 type PasswordSearch struct {
-  	Query          string 
+    Query          string 
     Account        string
     Username       string
     Password       string
-    List           string
+    List           []string
     UnlockPassword string
+    View           int
+}
+
+type CurrentAccount struct {
+    Account        string
+    Username       string
+    Password       string
+}
+
+func CreateAccountBody() string {
+    return ``
 }
 
 func (h *PasswordSearch) Render() string {
@@ -62,80 +72,37 @@ func (h *PasswordSearch) Render() string {
     // a search bar and a list with entries 
     if unlocked {
         var body string
-        head := `<div class="WindowLayout" oncontextmenu="OnContextMenu">    
-                    <div class="SearchLayout">
-                        <input type="text"
-                               value="{{html .Query}}"
-                               placeholder="Account"
-                               autofocus="true"
-                               onchange="Search"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>`
+        var head string
         // If an account has been specified, i.e., if an entry was clicked...
-        if h.Account != "" {
-            body = `<div  style="overflow-y:scroll; max-height:375px; margin-top:20px" clickable="on" class="clickable">
-                        <h1 style="margin-top: 0; margin-left: 15px">{{.Account}}</h1>
-                        <h2 style="margin-left: 15px">Username</h2>
-                        <div selectable="on" class="selectable" style="color: PaleGreen; margin-top: 0; margin-left: 15px">{{.Username}}</div>
-                        <h2 style="margin-left: 15px">Password</h2>
-                        <div selectable="on" class="selectable" style="color: DeepPink; margin-top: 0; margin-left: 15px; -webkit-user-select: auto;
-   pointer-events: auto;">{{.Password}}</div>
-                    </div>`
-        } else {
+        if h.View == 1 {
+            head = GetSearchInput()
+            body = GetAccountBody()
+        } else if h.View == 0 {
             // ...or show the filtered list...
-            body = `<div  style="overflow-y:scroll; max-height:375px; margin-top:20px" clickable="on" class="clickable">
-                        {{.List}}
-                    </div>`
+            if len(h.List) > 0 {
+                head = GetSearchInput()
+                body = GetListBody()
+            } else {
+                  return GetEmptySearchDialog()
+            }
+        } else {
+            return GetConfirmDeleteDialog()
         }
-        tail := `   </div>
-                </div>`
-        return head + body + tail
+        return head + body
     } else {
         //if h.UnlockPassword != "nil" TODO
-
-        return `<div class="WindowLayout">    
-                    <div class="PasswordEntryLayout">
-                        <input type="password"
-                               value="{{html .UnlockPassword}}"
-                               placeholder="Password"
-                               autofocus="true"
-                               onchange="Unlock"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>
-                    </div>
-                    <div class="image"></div>​
-                </div>`
+        return GetPasswordInput()
     }
 }
 
-func FormatListItem(v string) string {
-    return `<h3 clickable="on" class="clickable" style="margin-top: 0; margin-left: 15px">
-                <a href="PasswordSearch?Account=` + v + `">` + v + `</a>
-            </h3>`
-}
-
 // Does a search and filter
-func GetList(s string) string {
-    accounts := DoList(s)
-    // Create list with entries
-    list := Map(accounts, func(v string) string {
-        return FormatListItem(v)
-    })
-    // Return as a string
-    return strings.Join(list, "")
+func GetList(s string) []string {
+    return DoListRequest(s)
 }
 
 // Requests a specific entry
 func GetEntry(s string) (string, string) {
-    return DoRequest(s)
+    return DoGetRequest(s)
 }
 
 func (h *PasswordSearch) OnHref(URL *url.URL) {
@@ -144,13 +111,10 @@ func (h *PasswordSearch) OnHref(URL *url.URL) {
     // Set account and username/password in internal
     // data structure for showing
     h.Account = u.Get("Account")
-    h.Password, h.Username = DoRequest(h.Account)
+    h.View = 1
+    h.Password, h.Username = DoGetRequest(h.Account)
     // Show it!
     app.Render(h)
-    // Clear the response
-    h.Account = ""
-    h.Password = ""
-    h.Username = ""
 }
 
 func (h *PasswordSearch) Unlock(arg app.ChangeArg) {
@@ -169,22 +133,63 @@ func (h *PasswordSearch) Unlock(arg app.ChangeArg) {
         // Init the unlocked display with all entries
         h.List = GetList("")
     }
+    h.View = 0
     // Show
     app.Render(h)
 }
 
+func (h *PasswordSearch) CancelTrashView(arg app.ChangeArg) {
+    h.View = 1
+    app.Render(h)
+}
+
+func (h *PasswordSearch) CancelAccountView(arg app.ChangeArg) {
+    log.Println(h.Password)
+    log.Println(h.Username)
+    // Go back from account view
+    h.List = GetList("")
+    h.View = 0
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
+func (h *PasswordSearch) OkAccountView(arg app.ChangeArg) {
+    log.Println(h.Password)
+    log.Println(h.Username)
+    // Go back from account view
+    h.List = GetList("")
+    h.View = 0
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
+func (h *PasswordSearch) RerandomizePasswordAccountView(arg app.ChangeArg) {
+    h.Password, _ = RandomPassword(64)
+    h.View = 1
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
+func (h *PasswordSearch) DeleteAccountView(arg app.ChangeArg) {
+    // Go back from account view
+    h.List = GetList("")
+    // Tells the app to update the rendering of the component.
+    h.View = 2
+    app.Render(h)
+}
+
 func (h *PasswordSearch) Search(arg app.ChangeArg) {
-  	h.Query = arg.Value
+    h.Query = arg.Value
     // Create a list of entries
     h.List = GetList(h.Query)
     // Tells the app to update the rendering of the component.
-  	app.Render(h)
+    h.View = 0
+    app.Render(h)
 }
 
 func (h *PasswordSearch) OnContextMenu() {
-	///ctxmenu := app.NewContextMenu()
-	//ctxmenu.Mount(&AppMainMenu{})
-
+    ///ctxmenu := app.NewContextMenu()
+    //ctxmenu.Mount(&AppMainMenu{})
 }
 
 func init() {
@@ -209,5 +214,5 @@ func init() {
     config = LoadConfiguration("config.json")
     entryPoint = "https://" + config.Host + ":" + config.Port + "/v1/secret"
     // Register UI component
-  	app.RegisterComponent(&PasswordSearch{})
+    app.RegisterComponent(&PasswordSearch{})
 }

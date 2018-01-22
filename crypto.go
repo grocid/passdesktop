@@ -32,6 +32,7 @@ package main
 
 import (
     "io"
+    "math/big"
     "crypto/aes"
     "crypto/cipher"
     "crypto/rand"
@@ -39,6 +40,24 @@ import (
     "golang.org/x/crypto/pbkdf2"
     "encoding/hex"
   )
+
+var alphabet = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+
+
+func RandomPassword(length int) (string, error) {
+    result := ""
+    for {
+        if len(result) >= length {
+          return result, nil
+        }
+        num, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
+        if err != nil {
+            return "", err
+        }
+        n := num.Int64()
+        result += string(alphabet[n])
+    }
+}
 
 func LockToken(plaintext string, password string) (string, string, string, error) {
     // Generate random salt
