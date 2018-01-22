@@ -190,15 +190,15 @@ input:focus {
 }
 
 .symbol.trash {
-    content:url("../symbols/trash.png");
+    content:url(../symbols/trash.png);
 }
 
 .symbol.lock {
-    content:url("../symbols/lock.png");
+    content:url(../symbols/lock.png);
 }
 
 .symbol.search {
-    content:url("../symbols/search.png");
+    content:url(../symbols/search.png);
 }
 
 .bottom-toolbar {
