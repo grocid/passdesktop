@@ -43,6 +43,10 @@ If you created an App with macpack, then you can simply copy the App, because `c
 
 When an Apple computer goes into hibernation (not regular sleep), in-memory contents are transferred to disk. I am not entirely sure if the disk data is encrypted if you are not running FileVault. The token could theoretically be scraped here.
 
+## Performance
+
+Pass Desktop keeps no information stored on disk. Search operations are done by performing a LIST (Hashicorp-specific operation), which fetches a JSON with all keys (account names) from the server, after which filtering operations are performed locally. This is done every search query, so with a slow server, the user experience may not be as intended. The same applies for very long lists of accounts. Moreever, Pass Desktop keeps an iconset, where each filename is associated with the account name (favicons are too small). Since there is a mapping betwen account names and the iconset, the recommended convention is to name accounts after the domain. The iconset can be extended by the user with minor effort. The memory usage is about 50 MBs of RAM.
+
 ## Building
 
 It is as simple as
