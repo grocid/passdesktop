@@ -126,7 +126,7 @@ Vault binds to `127.0.0.1`, so we need fw to access it (if you do not want to us
 
 The more proper way to start Consul, Vault and fw would be to create an init.d or systemd service, but this is fine for testing purposes.
 
-## Screenshot
+## Screenshots
 
 ![Config](config.png)
 ![Unlock](unlock.png)
