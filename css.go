@@ -119,7 +119,6 @@ func GetConfirmDeleteDialog() string {
                     <input type="text"
                            value="{{html .Query}}"
                            placeholder="Account"
-                           autofocus="false"
                            onchange="Search"
                            autocomplete="off" 
                            autocorrect="off" 
@@ -328,7 +327,7 @@ func GetListBody(h *PasswordSearch) string {
                            selectable="on" 
                            class="editable searchfield"/>
                       <div  style="overflow-y:scroll; 
-                                   max-height:415px; 
+                                   max-height:450px; 
                                    margin-top:20px" 
                             clickable="on" 
                             class="clickable">

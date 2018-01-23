@@ -54,11 +54,12 @@ func main() {
 }
 
 func newMainWindow() app.Contexter {
+
     // Creates a window context.
     win := app.NewWindow(app.Window{
         Title:          "Pass",
         Width:          300,
-        Height:         520,
+        Height:         550,
         Vibrancy:       app.VibeUltraDark,
         //Vibrancy:       app.VibeMediumLight,
         TitlebarHidden: true,
