@@ -1,4 +1,4 @@
 language: go
-
+os: osx
 go:
   - master
