@@ -31,7 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
+    "os"
     "log"
+    "strconv"
+    "path/filepath"
     "net/url"
     "net/http"
     "io/ioutil"
@@ -46,6 +49,8 @@ var entryPoint string
 var unlocked bool
 var config Config
 
+const ConfigFile = "config.json"
+const CAFile = "ca.crt"
 
 type PasswordSearch struct {
     Query          string 
@@ -55,6 +60,8 @@ type PasswordSearch struct {
     List           []string
     UnlockPassword string
     View           int
+    Meta           string
+    Filename       string
 }
 
 type CurrentAccount struct {
@@ -63,36 +70,32 @@ type CurrentAccount struct {
     Password       string
 }
 
-func CreateAccountBody() string {
-    return ``
-}
-
 func (h *PasswordSearch) Render() string {
-    // If the client has been unlocked, show the screen with
-    // a search bar and a list with entries 
-    if unlocked {
-        var body string
-        var head string
-        // If an account has been specified, i.e., if an entry was clicked...
-        if h.View == 1 {
-            head = GetSearchInput()
-            body = GetAccountBody()
-        } else if h.View == 0 {
-            // ...or show the filtered list...
-            if len(h.List) > 0 {
-                head = GetSearchInput()
-                body = GetListBody()
-            } else {
-                  return GetEmptySearchDialog()
-            }
-        } else {
-            return GetConfirmDeleteDialog()
-        }
-        return head + body
-    } else {
+    // If no config file is present...
+    if config == (Config{}) {
+        return GetCreateConfigDialog()
+    }
+    // If locked ask for password...
+    if !unlocked {
         //if h.UnlockPassword != "nil" TODO
         return GetPasswordInput()
     }
+    // If the client has been unlocked, show the screen with
+    // a search bar and a list with entries
+    if h.View == 1 {
+        // If an account has been specified, i.e., if an entry was clicked...
+        return GetAccountBody(h)
+    } else if h.View == 0 {
+        // ...or show the filtered list...
+        if len(h.List) > 0 {
+            return GetListBody(h)
+        } else {
+            return GetEmptySearchDialog()
+        }
+    } else {
+        return GetConfirmDeleteDialog()
+    }
+
 }
 
 // Does a search and filter
@@ -111,6 +114,7 @@ func (h *PasswordSearch) OnHref(URL *url.URL) {
     // Set account and username/password in internal
     // data structure for showing
     h.Account = u.Get("Account")
+    h.Query = u.Get("Account")
     h.View = 1
     h.Password, h.Username = DoGetRequest(h.Account)
     // Show it!
@@ -128,6 +132,7 @@ func (h *PasswordSearch) Unlock(arg app.ChangeArg) {
     if err == nil {
         // Progress to unlocked display
         unlocked = true
+        log.Println("Unlocked")
         // Set token
         decryptedToken = token
         // Init the unlocked display with all entries
@@ -138,14 +143,77 @@ func (h *PasswordSearch) Unlock(arg app.ChangeArg) {
     app.Render(h)
 }
 
+func (h *PasswordSearch) PickFile(arg app.ChangeArg) {
+    app.NewFilePicker(app.FilePicker {
+            MultipleSelection: false,
+            NoDir:             true,
+            NoFile:            false,
+            OnPick: func(filenames []string) {
+                CopyFile(filenames[0], CAFile)
+                h.Filename = filepath.Base(filenames[0])
+                app.Render(h)
+            },
+        })
+
+}
+
+func (h *PasswordSearch) CreateConfig(arg app.ChangeArg) {
+    if h.Query == "" {
+        log.Println("No token.")
+        return
+    }
+    // Passwords
+    if (len(h.Password) < 4) && (h.Password != h.UnlockPassword) {
+        log.Println("Password too short or non-matching.")
+        return
+    }
+    // Hostname
+    if h.Account == "" {
+        log.Println("No hostname.")
+        return
+    }
+    // Port
+    if h.Meta == "" {
+        log.Println("No port.")
+        return
+    }
+    if _, err := strconv.Atoi(h.Meta); err != nil {
+        log.Println("Invalid port.")
+        return
+    }
+    token, nonce, salt, err := LockToken(h.Query, h.Password)
+    if err != nil {
+        log.Println(err)
+        return
+    }
+    if _, err := os.Stat(CAFile); os.IsNotExist(err) {
+        log.Println(err)
+        return
+    }
+    config.Encrypted.Token = token
+    config.Encrypted.Nonce = nonce
+    config.Encrypted.Salt = salt
+    config.Host = h.Account
+    config.Port = h.Meta
+    //unlocked = true
+    log.Println(h.Password)
+    log.Println(token)
+    log.Println(nonce)
+    log.Println(salt)
+    //decryptedToken = h.Query
+    h.Query = ""
+    h.Password = ""
+    h.UnlockPassword = ""
+    SetupConfig()
+    app.Render(h)
+}
+
 func (h *PasswordSearch) CancelTrashView(arg app.ChangeArg) {
     h.View = 1
     app.Render(h)
 }
 
 func (h *PasswordSearch) CancelAccountView(arg app.ChangeArg) {
-    log.Println(h.Password)
-    log.Println(h.Username)
     // Go back from account view
     h.List = GetList("")
     h.View = 0
@@ -154,8 +222,6 @@ func (h *PasswordSearch) CancelAccountView(arg app.ChangeArg) {
 }
 
 func (h *PasswordSearch) OkAccountView(arg app.ChangeArg) {
-    log.Println(h.Password)
-    log.Println(h.Username)
     // Go back from account view
     h.List = GetList("")
     h.View = 0
@@ -187,14 +253,10 @@ func (h *PasswordSearch) Search(arg app.ChangeArg) {
     app.Render(h)
 }
 
-func (h *PasswordSearch) OnContextMenu() {
-    ///ctxmenu := app.NewContextMenu()
-    //ctxmenu.Mount(&AppMainMenu{})
-}
-
-func init() {
+func SetupConfig() {
+    entryPoint = "https://" + config.Host + ":" + config.Port + "/v1/secret"
     // Init client for performing REST queries to Vault
-    caCert, err := ioutil.ReadFile("ca.crt")
+    caCert, err := ioutil.ReadFile(CAFile)
     // Unless something went wrong with reading the certificate...
     if err != nil {
         log.Fatal(err)
@@ -210,9 +272,18 @@ func init() {
             },
         },
     }
+}
+
+func init() {
+
     // Load config file
-    config = LoadConfiguration("config.json")
-    entryPoint = "https://" + config.Host + ":" + config.Port + "/v1/secret"
+    if _, err := os.Stat(ConfigFile); os.IsNotExist(err) {
+        log.Println("No config file present.")
+    } else {
+        config = LoadConfiguration(ConfigFile)
+        SetupConfig()
+    }
+
     // Register UI component
     app.RegisterComponent(&PasswordSearch{})
 }

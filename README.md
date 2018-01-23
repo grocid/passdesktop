@@ -128,6 +128,11 @@ The more proper way to start Consul, Vault and fw would be to create an init.d o
 
 ## Screenshot
 
+![Config](config.png)
+![Unlock](unlock.png)
+![Search](search.png)
+![Account](account.png)
+![Trash](trash.png)
 ![Pass](pass.gif)
 
 Note: the passwords shown are of course fully working. Do not try to use them!

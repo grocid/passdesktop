@@ -32,6 +32,7 @@ package main
 
 import (
     "os"
+    "io"
     "log"
     "encoding/json"
 )
@@ -46,19 +47,35 @@ type Config struct {
     Port string `json:"port"`
 }
 
-func LoadConfiguration(file string) Config {
 
+func CopyFile(source string, destination string) error {
+    s, err := os.Open(source)
+    if err != nil {
+        return err
+    }
+    // no need to check errors on read only file, we already got everything
+    // we need from the filesystem, so nothing can go wrong now.
+    defer s.Close()
+    d, err := os.Create(destination)
+    if err != nil {
+        return err
+    }
+    if _, err := io.Copy(d, s); err != nil {
+        d.Close()
+        return err
+    }
+    return d.Close()
+}
+
+func LoadConfiguration(file string) Config {
     var config Config
     configFile, err := os.Open(file)
     defer configFile.Close()
-
     if err != nil {
         log.Println(err.Error())
     }
-
     jsonParser := json.NewDecoder(configFile)
     jsonParser.Decode(&config)
-
     return config
 }
 

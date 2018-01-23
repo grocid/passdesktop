@@ -10,23 +10,30 @@ body {
 }
 
 h1 {
-    font-weight: 700; 
+    font-weight: 400; 
     font-size: 28px;
-    margin-left: 7%;
 }
 
 h2 {
-    font-weight: 700; 
+    font-weight: 400; 
     font-size: 18px;
     margin-left: 7%;
     margin-bottom: 0;
 }
 
 h3 {
-    font-weight: 700; 
     font-size: 16px;
+    font-weight: 400;
+    margin: 0; 
     margin-left: 7%;
-    margin-top: 0;
+    padding: 17px;
+}
+
+p {
+    font-weight: 400; 
+    font-size: 14px;
+    margin-left: 7%;
+    width: 85%;
 }
 
 a {
@@ -57,6 +64,38 @@ input:focus {
     background: rgba(30, 34, 37, 0.25);
 }
 
+
+
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding-left: 5%;
+    width: 90%;
+}
+
+
+
+li img {
+    float: left;
+    list-style-type: none;
+    margin: 0 12px 0 0;
+    width: 48px;
+    border-radius: 7px;
+}
+
+li {
+  list-style-type: none;
+  padding: 4px;
+  overflow: auto;
+  border-radius: 5px;
+}
+
+li:hover {
+  list-style-type: none;
+  background: rgba(255, 255, 255, 0.2);
+  cursor: pointer;
+}
+
 @keyframes fadein {
     from {
         opacity:0;
@@ -75,6 +114,13 @@ input:focus {
     }
 }
 
+.animated {
+    animation: fadein 1s;
+    -moz-animation: fadein 1s;
+    -webkit-animation: fadein 1s;
+    -o-animation: fadein 1s;
+}
+
 .selectable {
     -webkit-user-select: auto;
     pointer-events: auto;
@@ -85,14 +131,14 @@ input:focus {
 }
 
 .editable {
+    background-color: rgba(30, 34, 37, 0);
+    color: grey; 
     margin-left: 5%;
-    width: 85%;
     padding: 5pt;
+    width: 85%;
     border: 0;
     outline: none;
     font-size: 18px;
-    background: rgba(30, 34, 37, 0);
-    color: grey; 
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
     border-radius: 5px;
@@ -102,16 +148,22 @@ input:focus {
 
 .editable:focus {
     color: white;
-    background: rgba(30, 34, 37, 0.25);
+    background-color: rgba(30, 34, 37, 0.25);
 }
 
-.animated {
-    animation: fadein 0.5s;
-    -moz-animation: fadein 0.5s; /* Firefox */
-    -webkit-animation: fadein 0.5s; /* Safari and Chrome */
-    -o-animation: fadein 0.5s; /* Opera */
+.editable.searchfield {
+    width: 78%;
+    background: rgba(30, 34, 37, 0.25) url(../symbols/search_small.png) no-repeat scroll 10px 10px;
+    background-size: 14px;
+    padding-left: 30px;
 }
 
+.editable.password {
+    width: 78%;
+    background: rgba(30, 34, 37, 0.25) url(../symbols/key_small.png) no-repeat scroll 10px 10px;
+    background-size: 14px;
+    padding-left: 30px;
+}
 
 .WindowLayout {
     position: fixed;
