@@ -2,7 +2,3 @@ language: go
 
 go:
   - master
-
-script:
-  go get "github.com/murlokswarm/app"
-  go get "github.com/murlokswarm/mac"
