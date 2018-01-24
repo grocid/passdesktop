@@ -131,7 +131,7 @@ func EncryptGCM(plaintext []byte, key []byte) ([]byte, []byte, error) {
         return []byte{}, []byte{}, err
     }
 
-    // ...and try to encrypt...
+    // ...and try to initialize cipher...
     aesgcm, err := cipher.NewGCM(block)
 
     // ...if we fail, we return an error...
@@ -139,7 +139,7 @@ func EncryptGCM(plaintext []byte, key []byte) ([]byte, []byte, error) {
         return []byte{}, []byte{}, err
     }
 
-    // Return ciphertext to caller
+    // Encrypt token and return ciphertext to caller
     return aesgcm.Seal(nil, nonce, plaintext, nil), nonce, nil
 
 }
