@@ -50,19 +50,22 @@ type Configuration struct {
 
 func CopyFile(source string, destination string) error {
     s, err := os.Open(source)
+
+    // If error, we handle it nicely.
     if err != nil {
         return err
     }
 
-    // no need to check errors on read only file, we already got everything
-    // we need from the filesystem, so nothing can go wrong now.
+    // Create destination file.
     defer s.Close()
     d, err := os.Create(destination)
 
+    // Again, fingers crossed.
     if err != nil {
         return err
     }
 
+    // Copy contents
     if _, err := io.Copy(d, s); err != nil {
         d.Close()
         return err
@@ -73,13 +76,17 @@ func CopyFile(source string, destination string) error {
 
 func LoadConfiguration(file string) Configuration {
     var config Configuration
+
+    // Try to open configuration file.
     configFile, err := os.Open(file)
     defer configFile.Close()
 
+    // Bail out if there was an error reading it.
     if err != nil {
-        log.Println(err.Error())
+        log.Fatal(err.Error())
     }
 
+    // Decode the config.
     jsonParser := json.NewDecoder(configFile)
     jsonParser.Decode(&config)
     return config
