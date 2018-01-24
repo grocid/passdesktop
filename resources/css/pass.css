@@ -179,6 +179,15 @@ li:hover {
     pointer-events: none;
 }
 
+.SearchListItemCaption {
+    font-size: 16px;
+    font-weight: 400;
+    margin: 0; 
+    margin-left: 7%;
+    padding: 17px;
+}
+
+
 .PasswordEntryLayout {
     padding-top: 20pt; 
     -webkit-user-select: none;

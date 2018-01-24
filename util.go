@@ -37,7 +37,7 @@ import (
     "encoding/json"
 )
 
-type Config struct {
+type Configuration struct {
     Encrypted struct {
         Token string `json:"token"`
         Nonce string `json:"nonce"`
@@ -53,27 +53,33 @@ func CopyFile(source string, destination string) error {
     if err != nil {
         return err
     }
+
     // no need to check errors on read only file, we already got everything
     // we need from the filesystem, so nothing can go wrong now.
     defer s.Close()
     d, err := os.Create(destination)
+
     if err != nil {
         return err
     }
+
     if _, err := io.Copy(d, s); err != nil {
         d.Close()
         return err
     }
+
     return d.Close()
 }
 
-func LoadConfiguration(file string) Config {
-    var config Config
+func LoadConfiguration(file string) Configuration {
+    var config Configuration
     configFile, err := os.Open(file)
     defer configFile.Close()
+
     if err != nil {
         log.Println(err.Error())
     }
+
     jsonParser := json.NewDecoder(configFile)
     jsonParser.Decode(&config)
     return config
@@ -81,18 +87,12 @@ func LoadConfiguration(file string) Config {
 
 func Filter(vs []string, f func(string) bool) []string {
     vsf := make([]string, 0)
+
     for _, v := range vs {
         if f(v) {
             vsf = append(vsf, v)
         }
     }
-    return vsf
-}
 
-func Map(vs []string, f func(string) string) []string {
-    vsm := make([]string, len(vs))
-    for i, v := range vs {
-        vsm[i] = f(v)
-    }
-    return vsm
+    return vsf
 }

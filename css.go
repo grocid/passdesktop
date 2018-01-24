@@ -30,7 +30,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package main
 
-import "os"
+import (
+    "os"
+    "fmt"
+)
 
 func GetCreateConfigDialog() string {
     return `<div class="clickable" >
@@ -64,7 +67,7 @@ func GetCreateConfigDialog() string {
                                class="selectable"/>
                         <input type="password"
                                placeholder="Password"
-                               onchange="UnlockPassword"
+                               onchange="PasswordAgain"
                                autocomplete="off" 
                                autocorrect="off" 
                                autocapitalize="off" 
@@ -74,7 +77,7 @@ func GetCreateConfigDialog() string {
                         <h2 style="margin-top: 15px; margin-bottom: 15px">Server</h2>
                         <input type="text"
                                placeholder="myserver.com"
-                               onchange="Account"
+                               onchange="Hostname"
                                autocomplete="off" 
                                autocorrect="off" 
                                autocapitalize="off" 
@@ -83,7 +86,7 @@ func GetCreateConfigDialog() string {
                                class="selectable"/>
                         <input type="text"
                                placeholder="8001"
-                               onchange="Meta"
+                               onchange="Port"
                                autocomplete="off" 
                                autocorrect="off" 
                                autocapitalize="off" 
@@ -109,6 +112,27 @@ func GetCreateConfigDialog() string {
                     <div class="bottom-toolbar">
                         <button class="button ok" onclick="CreateConfig"/>
                     </div>
+                </div>
+            </div>`
+}
+
+// Password-input dialog
+func GetPasswordInput() string {
+    return `<div class="WindowLayout">
+                <div class="animated">
+                    <div class="PasswordEntryLayout">
+                        <input type="password"
+                               placeholder="Password"
+                               autofocus="true"
+                               onchange="Unlock"
+                               autocomplete="off" 
+                               autocorrect="off" 
+                               autocapitalize="off" 
+                               spellcheck="false"
+                               selectable="on" 
+                               class="editable password"/>
+                    </div>
+                    <div class="symbol lock"/>
                 </div>
             </div>`
 }
@@ -221,15 +245,11 @@ func GetAddDialog() string {
 }
 
 // Show account details
-func GetAccountBody(h *PasswordSearch) string {
+func GetAccountBody(account string) string {
     // Some ugly solution since the fallback on image not found does not work
     var image string
-    if _, err := os.Stat("/Users/carl/Projekt/Go/Pass/resources/iconpack/" + h.Account + ".png"); os.IsNotExist(err) {
-        image = `<img src="/Users/carl/Projekt/Go/Pass/resources/iconpack/default.png" 
-                                 style="max-width: 128px; "/>`
-    } else {
-        image = `<img src="/Users/carl/Projekt/Go/Pass/resources/iconpack/` + h.Account + `.png" 
-                                 style="max-width: 128px; "/>`
+    if _, err := os.Stat("/Users/carl/Projekt/Go/Pass/resources/iconpack/" + account + ".png"); os.IsNotExist(err) {
+        image = "default"
     }
     return `<div class="WindowLayout">    
                 <div class="SearchLayout">
@@ -249,7 +269,9 @@ func GetAccountBody(h *PasswordSearch) string {
                             <div style="text-align: center; 
                                         margin-left: auto; 
                                         margin-right: auto;
-                                        padding-top: 30px">` + image + `
+                                        padding-top: 30px">
+                                 <img src="/Users/carl/Projekt/Go/Pass/resources/iconpack/` + image + `.png" 
+                                      style="max-width: 128px; "/>
                                  <h1>{{.Account}}</h1>
                             </div>
                             <h2>Username</h2>
@@ -291,24 +313,29 @@ func GetAccountBody(h *PasswordSearch) string {
 }
 
 // List view
-func GetListBody(h *PasswordSearch) string {
-    var siteList string
-    for _, element := range h.List {
-        if _, err := os.Stat("/Users/carl/Projekt/Go/Pass/resources/iconpack/" + element + ".png"); os.IsNotExist(err) {
-            siteList = siteList + `<a href="PasswordSearch?Account=` + element + `">
-                                        <li>
-                                            <img src="/Users/carl/Projekt/Go/Pass/resources/iconpack/default.png"/>
-                                            <h3>` + element + `</h3>
-                                        </li>
-                                    </a>`
-        } else {
-            siteList = siteList +`<a href="PasswordSearch?Account=` + element + `">
-                                        <li>
-                                            <img src="/Users/carl/Projekt/Go/Pass/resources/iconpack/` + element + `.png"/>
-                                            <h3>` + element + `</h3>
-                                        </li>
-                                    </a>`
+func GetListBody(searchResults [] string) string {
+    var accountListFormatted string
+    prefix := "/Users/carl/Projekt/Go/Pass/resources/iconpack/"
+
+    // Iterate through the search results
+    for _, element := range searchResults {
+        image := element
+
+        // Revert to default icon if account icon does not exist
+        if _, err := os.Stat(prefix + element + ".png"); os.IsNotExist(err) {
+            image = "default"
         }
+
+        // Format listitem
+        item := fmt.Sprintf(`<a href="PassView?Account=%s">
+                                <li>
+                                    <img src="%s%s.png"/>
+                                    <div class="SearchListItemCaption">%s</div>
+                                </li>
+                             </a>`, element, prefix, image, element)
+
+        // Concatenate list
+        accountListFormatted = accountListFormatted + item
     }
 
 
@@ -332,33 +359,10 @@ func GetListBody(h *PasswordSearch) string {
                             clickable="on" 
                             class="clickable">
                             <div class="animated">
-                                <ul>` + siteList + `
+                                <ul>` + accountListFormatted + `
                                 </ul>
                           </div>
                       </div>
                   </div>
               </div>`
-}
-
-
-// Password-input dialog
-func GetPasswordInput() string {
-    return `<div class="WindowLayout">
-                <div class="animated">
-                    <div class="PasswordEntryLayout">
-                        <input type="password"
-                               value="{{html .UnlockPassword}}"
-                               placeholder="Password"
-                               autofocus="true"
-                               onchange="Unlock"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="editable password"/>
-                    </div>
-                    <div class="symbol lock"/>
-                </div>
-            </div>`
 }

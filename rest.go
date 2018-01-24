@@ -51,53 +51,71 @@ type VaultResponseList struct {
     } `json:"data"`
 }
 
-func DoGetRequest(s string) (string, string) {
+func DoGetRequest(s string) AccountInfo {
     // Do a GET for the specified entry...
-    req, err := http.NewRequest("GET", entryPoint + "/" + s, nil)
-    req.Header.Add("X-Vault-Token", decryptedToken)
-    resp, err := client.Do(req)
+    req, err := http.NewRequest("GET", pass.EntryPoint + "/" + s, nil)
+    req.Header.Add("X-Vault-Token", pass.DecryptedToken)
+    resp, err := pass.Client.Do(req)
+
     // This should not happen, unless entry was deleted in the meantime...
     // TODO: we should handle this more gracefully...
     if err != nil {
-      log.Fatal(err)
+        log.Fatal(err)
     }
+
     // Read the body...
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
+
     // ...and parse the JSON
     r := VaultResponseGet{}
     json.Unmarshal([]byte(body), &r)
-    // and give back to UI
-    return r.Data.Password, r.Data.Username 
+    
+    // ...generate a AccountInfo struct...
+    account := AccountInfo{}
+    
+    // ...with the proper information...
+    account.Name = s
+    account.Username = r.Data.Username
+    account.Password = r.Data.Password
+    
+    // ...and return to caller.
+    return account
 }
 
 func DoListRequest(s string) []string {
-    // Do a LIST to get all entries...
-    req, err := http.NewRequest("LIST", entryPoint, nil)
-    req.Header.Add("X-Vault-Token", decryptedToken)
-    resp, err := client.Do(req)
-    // Again, this should not happen...
+    // Do a LIST to get all entries.
+    req, err := http.NewRequest("LIST", pass.EntryPoint, nil)
+    req.Header.Add("X-Vault-Token", pass.DecryptedToken)
+    resp, err := pass.Client.Do(req)
+
+    // This should not happen.
     if err != nil {
-      log.Fatal(err)
+        log.Fatal(err)
     }
+
     // Read in the data...
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
-    // and parse JSON
+
+    // ...and parse JSON.
     r := VaultResponseList{}
     json.Unmarshal([]byte(body), &r)
-    // Create a variable with the accounts...
+
+    // Create a variable with the accounts.
     var accounts [] string
-    // Here is the filtering part...
+
+    // Filtering of data.
     if s != "" {
-        // Filter the entries
+        // Filter the entries.
         accounts = Filter(r.Data.Keys, func(v string) bool {
             return strings.Contains(v, s)
         })
     } else {
-        // If filter was empty, we treat it as *
+        // If filter was empty, we treat it as wildcard.
         accounts = r.Data.Keys
     }
-    // Return to UI
+    
+    // Return to UI.
     return accounts
 }

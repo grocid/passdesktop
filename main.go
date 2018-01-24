@@ -41,6 +41,15 @@ var (
 
 func main() {
     app.OnLaunch = func() {
+        appMenu := &AppMainMenu{}    // Creates the AppMainMenu component.
+        if menuBar, ok := app.MenuBar(); ok { // Mounts the AppMainMenu component into the application menu bar.
+            menuBar.Mount(appMenu)
+        }
+
+        appMenuDock := &AppMainMenu{} // Creates another AppMainMenu.
+        if dock, ok := app.Dock(); ok {
+            dock.Mount(appMenuDock)
+        }
         // Create the main window
         win = newMainWindow()
     }
@@ -54,14 +63,12 @@ func main() {
 }
 
 func newMainWindow() app.Contexter {
-
     // Creates a window context.
     win := app.NewWindow(app.Window{
         Title:          "Pass",
         Width:          300,
         Height:         550,
         Vibrancy:       app.VibeUltraDark,
-        //Vibrancy:       app.VibeMediumLight,
         TitlebarHidden: true,
         FixedSize:      true,
         OnClose: func() bool {
@@ -70,7 +77,7 @@ func newMainWindow() app.Contexter {
         },
     })
     // Create component...
-    ps := &PasswordSearch{}
+    ps := &PassView{}
     // ...and mount to window
     win.Mount(ps)  
     // Return to context

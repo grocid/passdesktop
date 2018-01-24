@@ -33,6 +33,7 @@ package main
 import (
     "os"
     "log"
+    "fmt"
     "strconv"
     "path/filepath"
     "net/url"
@@ -43,107 +44,125 @@ import (
     "github.com/murlokswarm/app"
 )
 
-var decryptedToken string
-var client *http.Client
-var entryPoint string
-var unlocked bool
-var config Config
+type PassView struct {
+    Query          string 
+    Account        string
+    Token          string
+    Username       string
+    Password       string
+    PasswordAgain  string
+    Hostname       string
+    Port           string
+    Filename       string
+    AccountList    []string
+    ImageList      []string
+}
 
+type AccountInfo struct {
+    Name           string
+    Username       string
+    Password       string
+}
+
+type Application struct {
+    Client         *http.Client
+    Config         Configuration
+    DecryptedToken string
+    Locked         bool
+    Account        AccountInfo
+    CurrentView    int
+    SearchResult   []string
+    EntryPoint     string
+}
+
+const ViewSearchDialog  = 0
+const ViewAccountDialog = 1
+const ViewConfirmDeleteDialog = 2
+const ViewCreateAccountDialog = 3
+const ViewUnlockDialog = 4
+
+const DefaultGeneratedPasswordLength = 32
 const ConfigFile = "config.json"
 const CAFile = "ca.crt"
 
-type PasswordSearch struct {
-    Query          string 
-    Account        string
-    Username       string
-    Password       string
-    List           []string
-    UnlockPassword string
-    View           int
-    Meta           string
-    Filename       string
+var pass Application
+
+func ClearAccountInformation(h *PassView) {
+    h.Account = ""
+    h.Username = ""
+    h.Password = ""
+    return
 }
 
-type CurrentAccount struct {
-    Account        string
-    Username       string
-    Password       string
-}
+func (h *PassView) Render() string {
+    // Clear all account data
+    ClearAccountInformation(h)
 
-func (h *PasswordSearch) Render() string {
     // If no config file is present...
-    if config == (Config{}) {
+    if pass.Config == (Configuration{}) {
         return GetCreateConfigDialog()
     }
+
     // If locked ask for password...
-    if !unlocked {
-        //if h.UnlockPassword != "nil" TODO
+    if pass.Locked || pass.DecryptedToken == "" {
         return GetPasswordInput()
     }
-    // If the client has been unlocked, show the screen with
-    // a search bar and a list with entries
-    if h.View == 1 {
-        // If an account has been specified, i.e., if an entry was clicked...
-        return GetAccountBody(h)
-    } else if h.View == 0 {
-        // ...or show the filtered list...
-        if len(h.List) > 0 {
-            return GetListBody(h)
-        } else {
-            return GetEmptySearchDialog()
-        }
-    } else {
-        return GetConfirmDeleteDialog()
+
+    // Get the view from CurrentView and display
+    // accordingly
+    switch pass.CurrentView {
+
+        case ViewSearchDialog:
+            if len(pass.SearchResult) > 0 {
+                return GetListBody(pass.SearchResult)
+            } else {
+                return GetEmptySearchDialog()
+            }
+
+        case ViewAccountDialog:
+            h.Account = pass.Account.Name
+            h.Username = pass.Account.Username
+            h.Password = pass.Account.Password
+            return GetAccountBody(pass.Account.Name)
+
+        case ViewConfirmDeleteDialog:
+            return GetConfirmDeleteDialog()
+
+        default:
+            log.Fatal(pass.CurrentView)
+            return ""
     }
-
 }
 
-// Does a search and filter
-func GetList(s string) []string {
-    return DoListRequest(s)
-}
-
-// Requests a specific entry
-func GetEntry(s string) (string, string) {
-    return DoGetRequest(s)
-}
-
-func (h *PasswordSearch) OnHref(URL *url.URL) {
-    // Extract information from query
-    u := URL.Query()
-    // Set account and username/password in internal
-    // data structure for showing
-    h.Account = u.Get("Account")
-    h.Query = u.Get("Account")
-    h.View = 1
-    h.Password, h.Username = DoGetRequest(h.Account)
-    // Show it!
-    app.Render(h)
-}
-
-func (h *PasswordSearch) Unlock(arg app.ChangeArg) {
+func (h *PassView) Unlock(arg app.ChangeArg) {
     // Get the password
     password := arg.Value
+
     // Try to unlock the token with the password
-    token, err := UnlockToken(config.Encrypted.Token, 
-        password, config.Encrypted.Nonce, config.Encrypted.Salt)
+    token, err := UnlockToken(pass.Config.Encrypted.Token, 
+                              password, 
+                              pass.Config.Encrypted.Nonce, 
+                              pass.Config.Encrypted.Salt)
+
     // If we succed with message authentication, i.e.,
     // if password is correct...
     if err == nil {
         // Progress to unlocked display
-        unlocked = true
-        log.Println("Unlocked")
+        pass.Locked = false
         // Set token
-        decryptedToken = token
+        pass.DecryptedToken = token
         // Init the unlocked display with all entries
-        h.List = GetList("")
+        pass.SearchResult = DoListRequest("")
     }
-    h.View = 0
-    // Show
+
+    // Preset the search dialog
+    pass.CurrentView = ViewSearchDialog
+    
+    // Show if unlocking was successful
     app.Render(h)
 }
 
-func (h *PasswordSearch) PickFile(arg app.ChangeArg) {
+func (h *PassView) PickFile(arg app.ChangeArg) {
     app.NewFilePicker(app.FilePicker {
             MultipleSelection: false,
             NoDir:             true,
@@ -157,115 +176,149 @@ func (h *PasswordSearch) PickFile(arg app.ChangeArg) {
 
 }
 
-func (h *PasswordSearch) CreateConfig(arg app.ChangeArg) {
+func (h *PassView) CreateConfig(arg app.ChangeArg) {
     if h.Query == "" {
         log.Println("No token.")
         return
     }
-    // Passwords
-    if (len(h.Password) < 4) && (h.Password != h.UnlockPassword) {
+
+    if (len(h.Password) < 4) && (h.Password != h.PasswordAgain) {
         log.Println("Password too short or non-matching.")
         return
     }
-    // Hostname
-    if h.Account == "" {
+
+    if h.Hostname == "" {
         log.Println("No hostname.")
         return
     }
-    // Port
-    if h.Meta == "" {
+
+    if h.Port == "" {
         log.Println("No port.")
         return
     }
-    if _, err := strconv.Atoi(h.Meta); err != nil {
+
+    if _, err := strconv.Atoi(h.Port); err != nil {
         log.Println("Invalid port.")
         return
     }
-    token, nonce, salt, err := LockToken(h.Query, h.Password)
+
+    token, nonce, salt, err := LockToken(h.Token, h.Password)
     if err != nil {
         log.Println(err)
         return
     }
+
     if _, err := os.Stat(CAFile); os.IsNotExist(err) {
         log.Println(err)
         return
     }
-    config.Encrypted.Token = token
-    config.Encrypted.Nonce = nonce
-    config.Encrypted.Salt = salt
-    config.Host = h.Account
-    config.Port = h.Meta
-    //unlocked = true
-    log.Println(h.Password)
-    log.Println(token)
-    log.Println(nonce)
-    log.Println(salt)
-    //decryptedToken = h.Query
-    h.Query = ""
-    h.Password = ""
-    h.UnlockPassword = ""
-    SetupConfig()
+
+    // Put data into config struct
+    pass.Config.Encrypted.Token = token
+    pass.Config.Encrypted.Nonce = nonce
+    pass.Config.Encrypted.Salt = salt
+    pass.Config.Host = h.Hostname
+    pass.Config.Port = h.Port
+
+    // Lock
+    pass.Locked = true
+    pass.DecryptedToken = ""
+
+    // Wipe data from GUI
+    *h = PassView{}
+
+    // Setup the client
+    ConfigureTLSClient()
+
     app.Render(h)
 }
 
-func (h *PasswordSearch) CancelTrashView(arg app.ChangeArg) {
-    h.View = 1
+func (h *PassView) OnHref(URL *url.URL) {
+    // Extract information from query and get account name from query.
+    u := URL.Query()
+    h.Query = u.Get("Account")
+
+    // Go to account view and fetch information from server
+    pass.CurrentView = ViewAccountDialog
+    pass.Account = DoGetRequest(h.Query)
+
+    // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
-func (h *PasswordSearch) CancelAccountView(arg app.ChangeArg) {
+func (h *PassView) CancelTrashView(arg app.ChangeArg) {
+    // Go back from trash view to account view
+    pass.CurrentView = ViewAccountDialog
+
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
+func (h *PassView) CancelAccountView(arg app.ChangeArg) {
+    // Go back from account view to search view
+    pass.CurrentView = ViewSearchDialog
+
     // Go back from account view
-    h.List = GetList("")
-    h.View = 0
+    pass.SearchResult = DoListRequest("")
+
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
-func (h *PasswordSearch) OkAccountView(arg app.ChangeArg) {
-    // Go back from account view
-    h.List = GetList("")
-    h.View = 0
+func (h *PassView) OkAccountView(arg app.ChangeArg) {
+    // Go back from account view to search view and fetch all accounts
+    pass.CurrentView = ViewSearchDialog
+    pass.SearchResult = DoListRequest("")
+
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
-func (h *PasswordSearch) RerandomizePasswordAccountView(arg app.ChangeArg) {
-    h.Password, _ = RandomPassword(64)
-    h.View = 1
+func (h *PassView) RerandomizePasswordAccountView(arg app.ChangeArg) {
+    // Generate a new password
+    h.Password, _ = RandomPassword(DefaultGeneratedPasswordLength)
+
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
-func (h *PasswordSearch) DeleteAccountView(arg app.ChangeArg) {
-    // Go back from account view
-    h.List = GetList("")
+func (h *PassView) DeleteAccountView(arg app.ChangeArg) {
+    // Go to confirm delete view
+    pass.CurrentView = ViewConfirmDeleteDialog
+
     // Tells the app to update the rendering of the component.
-    h.View = 2
     app.Render(h)
 }
 
-func (h *PasswordSearch) Search(arg app.ChangeArg) {
-    h.Query = arg.Value
-    // Create a list of entries
-    h.List = GetList(h.Query)
+func (h *PassView) Search(arg app.ChangeArg) {
+    // Stay in search view and fetch accounts based on query
+    pass.CurrentView = ViewSearchDialog
+    pass.SearchResult = DoListRequest(arg.Value)
+
     // Tells the app to update the rendering of the component.
-    h.View = 0
     app.Render(h)
 }
 
-func SetupConfig() {
-    entryPoint = "https://" + config.Host + ":" + config.Port + "/v1/secret"
+func ConfigureTLSClient() {
+    // Setup entrypoint
+    pass.EntryPoint = fmt.Sprintf("https://%s:%s/v1/secret", 
+                                  pass.Config.Host, 
+                                  pass.Config.Port)
+
     // Init client for performing REST queries to Vault
     caCert, err := ioutil.ReadFile(CAFile)
+
     // Unless something went wrong with reading the certificate...
     if err != nil {
         log.Fatal(err)
     }
+
     // Create a TLS context...
     caCertPool := x509.NewCertPool()
     caCertPool.AppendCertsFromPEM(caCert)
+
     // ...and a client
-    client = &http.Client{
+    pass.Client = &http.Client{
         Transport: &http.Transport{
             TLSClientConfig: &tls.Config{
                 RootCAs:      caCertPool,
@@ -275,15 +328,17 @@ func SetupConfig() {
 }
 
 func init() {
+    // Pass is locked by default
+    pass.Locked = true
 
     // Load config file
     if _, err := os.Stat(ConfigFile); os.IsNotExist(err) {
         log.Println("No config file present.")
     } else {
-        config = LoadConfiguration(ConfigFile)
-        SetupConfig()
+        pass.Config = LoadConfiguration(ConfigFile)
+        ConfigureTLSClient()
     }
 
     // Register UI component
-    app.RegisterComponent(&PasswordSearch{})
+    app.RegisterComponent(&PassView{})
 }
