@@ -35,6 +35,9 @@ import (
     "fmt"
 )
 
+// TODO: fix this to relative path
+const prefix = "/Users/carl/Projekt/Go/Pass/resources/iconpack/"
+
 func GetCreateConfigDialog() string {
     return `<div class="clickable" >
                 <div class="animated">
@@ -246,11 +249,13 @@ func GetAddDialog() string {
 
 // Show account details
 func GetAccountBody(account string) string {
-    // Some ugly solution since the fallback on image not found does not work
-    var image string
-    if _, err := os.Stat("/Users/carl/Projekt/Go/Pass/resources/iconpack/" + account + ".png"); os.IsNotExist(err) {
+    // Some ugly solution since the fallback on image not found does not work...
+    image := account
+
+    if _, err := os.Stat(prefix + account + ".png"); os.IsNotExist(err) {
         image = "default"
     }
+
     return `<div class="WindowLayout">    
                 <div class="SearchLayout">
                     <input type="text"
@@ -270,7 +275,7 @@ func GetAccountBody(account string) string {
                                         margin-left: auto; 
                                         margin-right: auto;
                                         padding-top: 30px">
-                                 <img src="/Users/carl/Projekt/Go/Pass/resources/iconpack/` + image + `.png" 
+                                 <img src="` + prefix + image + `.png" 
                                       style="max-width: 128px; "/>
                                  <h1>{{.Account}}</h1>
                             </div>
@@ -315,18 +320,17 @@ func GetAccountBody(account string) string {
 // List view
 func GetListBody(searchResults [] string) string {
     var accountListFormatted string
-    prefix := "/Users/carl/Projekt/Go/Pass/resources/iconpack/"
 
-    // Iterate through the search results
+    // Iterate through the search results.
     for _, element := range searchResults {
         image := element
 
-        // Revert to default icon if account icon does not exist
+        // Revert to default icon if account icon does not exist.
         if _, err := os.Stat(prefix + element + ".png"); os.IsNotExist(err) {
             image = "default"
         }
 
-        // Format listitem
+        // Format listitem.
         item := fmt.Sprintf(`<a href="PassView?Account=%s">
                                 <li>
                                     <img src="%s%s.png"/>
@@ -334,7 +338,7 @@ func GetListBody(searchResults [] string) string {
                                 </li>
                              </a>`, element, prefix, image, element)
 
-        // Concatenate list
+        // Concatenate list.
         accountListFormatted = accountListFormatted + item
     }
 
@@ -354,7 +358,7 @@ func GetListBody(searchResults [] string) string {
                            selectable="on" 
                            class="editable searchfield"/>
                       <div  style="overflow-y:scroll; 
-                                   max-height:450px; 
+                                   max-height:448px; 
                                    margin-top:20px" 
                             clickable="on" 
                             class="clickable">

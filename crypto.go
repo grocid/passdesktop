@@ -43,9 +43,9 @@ import (
 
 var alphabet = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
-const NonceLength 12
-const SaltLength 32
-const PBKDF2Iterations 4096
+const NonceLength = 12
+const SaltLength = 32
+const PBKDF2Iterations = 4096
 
 
 func RandomPassword(length int) (string, error) {

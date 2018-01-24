@@ -67,7 +67,7 @@ func newMainWindow() app.Contexter {
     win := app.NewWindow(app.Window{
         Title:          "Pass",
         Width:          300,
-        Height:         550,
+        Height:         548,
         Vibrancy:       app.VibeUltraDark,
         TitlebarHidden: true,
         FixedSize:      true,
