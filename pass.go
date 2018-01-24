@@ -54,8 +54,6 @@ type PassView struct {
     Hostname       string
     Port           string
     Filename       string
-    AccountList    []string
-    ImageList      []string
 }
 
 type AccountInfo struct {

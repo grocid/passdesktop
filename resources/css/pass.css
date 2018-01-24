@@ -64,8 +64,6 @@ input:focus {
     background: rgba(30, 34, 37, 0.25);
 }
 
-
-
 ul {
     list-style-type: none;
     margin: 0;
@@ -186,7 +184,6 @@ li:hover {
     margin-left: 7%;
     padding: 17px;
 }
-
 
 .PasswordEntryLayout {
     padding-top: 20pt; 
