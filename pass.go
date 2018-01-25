@@ -34,54 +34,59 @@ import (
     "os"
     "log"
     "fmt"
+    "time"
     "strconv"
     "path/filepath"
     "net/url"
     "net/http"
-    "io/ioutil"
     "crypto/x509"
     "crypto/tls"
     "github.com/murlokswarm/app"
+    "github.com/atotto/clipboard"
 )
 
-type PassView struct {
-    Query          string 
-    Account        string
-    Token          string
-    Username       string
-    Password       string
-    PasswordAgain  string
-    Hostname       string
-    Port           string
-    Filename       string
-}
+type (
+    PassView struct {
+        Query          string 
+        Account        string
+        Token          string
+        Username       string
+        Password       string
+        PasswordAgain  string
+        Hostname       string
+        Port           string
+        Filename       string
+    }
 
-type AccountInfo struct {
-    Name           string
-    Username       string
-    Password       string
-}
+    AccountInfo struct {
+        Name           string
+        Username       string
+        Password       string
+    }
 
-type Application struct {
-    Client         *http.Client
-    Config         Configuration
-    DecryptedToken string
-    Locked         bool
-    Account        AccountInfo
-    CurrentView    int
-    SearchResult   []string
-    EntryPoint     string
-}
+    Application struct {
+        Client         *http.Client
+        Config         Configuration
+        DecryptedToken string
+        Locked         bool
+        Account        AccountInfo
+        CurrentView    int
+        SearchResult   []string
+        EntryPoint     string
+        FullPath       string
+    }
+)
 
-const ViewSearchDialog  = 0
-const ViewAccountDialog = 1
-const ViewConfirmDeleteDialog = 2
-const ViewCreateAccountDialog = 3
-const ViewUnlockDialog = 4
+const (
+    ViewSearchDialog  = 0
+    ViewAccountDialog = 1
+    ViewConfirmDeleteDialog = 2
+    ViewCreateAccountDialog = 3
+    ViewUnlockDialog = 4
 
-const DefaultGeneratedPasswordLength = 32
-const ConfigFile = "config.json"
-const CAFile = "ca.crt"
+    DefaultGeneratedPasswordLength = 32
+    ConfigFile = "/../Resources/config/config.json"
+)
 
 var pass Application
 
@@ -93,7 +98,7 @@ func ClearAccountInformation(h *PassView) {
 }
 
 func (h *PassView) Render() string {
-    // Clear all account data
+    // Clear all account data from UI
     ClearAccountInformation(h)
 
     // If no config file is present...
@@ -118,9 +123,12 @@ func (h *PassView) Render() string {
             }
 
         case ViewAccountDialog:
+            // Pass information from internal struct
+            // to the UI components.
             h.Account = pass.Account.Name
             h.Username = pass.Account.Username
             h.Password = pass.Account.Password
+
             return GetAccountBody(pass.Account.Name)
 
         case ViewConfirmDeleteDialog:
@@ -166,7 +174,7 @@ func (h *PassView) PickFile(arg app.ChangeArg) {
             NoDir:             true,
             NoFile:            false,
             OnPick: func(filenames []string) {
-                CopyFile(filenames[0], CAFile)
+                //CopyFile(filenames[0], CAFile)
                 h.Filename = filepath.Base(filenames[0])
                 app.Render(h)
             },
@@ -175,7 +183,7 @@ func (h *PassView) PickFile(arg app.ChangeArg) {
 }
 
 func (h *PassView) CreateConfig(arg app.ChangeArg) {
-    if h.Query == "" {
+    if h.Token == "" {
         log.Println("No token.")
         return
     }
@@ -205,11 +213,11 @@ func (h *PassView) CreateConfig(arg app.ChangeArg) {
         log.Println(err)
         return
     }
-
+/*
     if _, err := os.Stat(CAFile); os.IsNotExist(err) {
         log.Println(err)
         return
-    }
+    }*/
 
     // Put data into config struct
     pass.Config.Encrypted.Token = token
@@ -244,15 +252,27 @@ func (h *PassView) OnHref(URL *url.URL) {
     app.Render(h)
 }
 
-func (h *PassView) CancelTrashView(arg app.ChangeArg) {
-    // Go back from trash view to account view
+func (h *PassView) CreateAccountView(arg app.ChangeArg) {
+    // Initialize the query as name and
+    // with empty crendentials
+    pass.Account.Name = h.Query
+    pass.Account.Username = ""
+    pass.Account.Password = ""
+
+    DoPutRequest(pass.Account)
+
     pass.CurrentView = ViewAccountDialog
 
-    // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
-func (h *PassView) CancelAccountView(arg app.ChangeArg) {
+func (h *PassView) OkTrashView(arg app.ChangeArg) {
+    DoDeleteRequest(pass.Account) 
+
+    // Since we deleted the account, we remove its name
+    // from the search bar
+    h.Query = ""
+
     // Go back from account view to search view
     pass.CurrentView = ViewSearchDialog
 
@@ -263,7 +283,27 @@ func (h *PassView) CancelAccountView(arg app.ChangeArg) {
     app.Render(h)
 }
 
+func (h *PassView) CancelTrashView(arg app.ChangeArg) {
+    // Go back from trash view to account view
+    pass.CurrentView = ViewAccountDialog
+
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
+func (h *PassView) CopyAccountView(arg app.ChangeArg) {
+    clipboard.WriteAll(pass.Account.Password)
+}
+
 func (h *PassView) OkAccountView(arg app.ChangeArg) {
+    // Update internal struct holding information
+    // from UI.
+    pass.Account.Username = h.Username
+    pass.Account.Password = h.Password
+
+    // Update it on server.
+    DoPutRequest(pass.Account) 
+
     // Go back from account view to search view and fetch all accounts
     pass.CurrentView = ViewSearchDialog
     pass.SearchResult = DoListRequest("")
@@ -272,16 +312,28 @@ func (h *PassView) OkAccountView(arg app.ChangeArg) {
     app.Render(h)
 }
 
+func (h *PassView) CancelAccountView(arg app.ChangeArg) {
+    // Go back from account view to search view.
+    pass.CurrentView = ViewSearchDialog
+
+    // Go back from account view
+    pass.SearchResult = DoListRequest("")
+
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
 func (h *PassView) RerandomizePasswordAccountView(arg app.ChangeArg) {
-    // Generate a new password
-    h.Password, _ = RandomPassword(DefaultGeneratedPasswordLength)
+    // Generate a new password and update username from UI.
+    pass.Account.Password, _ = RandomPassword(DefaultGeneratedPasswordLength)
+    pass.Account.Username = h.Username
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
 func (h *PassView) DeleteAccountView(arg app.ChangeArg) {
-    // Go to confirm delete view
+    // Go to confirm delete view.
     pass.CurrentView = ViewConfirmDeleteDialog
 
     // Tells the app to update the rendering of the component.
@@ -293,6 +345,11 @@ func (h *PassView) Search(arg app.ChangeArg) {
     pass.CurrentView = ViewSearchDialog
     pass.SearchResult = DoListRequest(arg.Value)
 
+    // We need to keep track of the query, since if result is empty
+    // and we want to create account, this is where information is
+    // fetched from.
+    h.Query = arg.Value
+
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
@@ -303,17 +360,9 @@ func ConfigureTLSClient() {
                                   pass.Config.Host, 
                                   pass.Config.Port)
 
-    // Init client for performing REST queries to Vault
-    caCert, err := ioutil.ReadFile(CAFile)
-
-    // Unless something went wrong with reading the certificate...
-    if err != nil {
-        log.Fatal(err)
-    }
-
     // Create a TLS context...
     caCertPool := x509.NewCertPool()
-    caCertPool.AppendCertsFromPEM(caCert)
+    caCertPool.AppendCertsFromPEM([]byte(pass.Config.CA))
 
     // ...and a client
     pass.Client = &http.Client{
@@ -322,18 +371,26 @@ func ConfigureTLSClient() {
                 RootCAs:      caCertPool,
             },
         },
+        Timeout: time.Second * 10,
     }
+}
+
+func SetApplicationPath() {
+    dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+    pass.FullPath = string(dir)
 }
 
 func init() {
     // Pass is locked by default
     pass.Locked = true
 
+    SetApplicationPath()
+
     // Load config file
-    if _, err := os.Stat(ConfigFile); os.IsNotExist(err) {
+    if _, err := os.Stat(pass.FullPath + ConfigFile); os.IsNotExist(err) {
         log.Println("No config file present.")
     } else {
-        pass.Config = LoadConfiguration(ConfigFile)
+        pass.Config = LoadConfiguration(pass.FullPath + ConfigFile)
         ConfigureTLSClient()
     }
 

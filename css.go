@@ -36,7 +36,7 @@ import (
 )
 
 // TODO: fix this to relative path
-const prefix = "/Users/carl/Projekt/Go/Pass/resources/iconpack/"
+const ImagePathSuffix = "/../Resources/iconpack/"
 
 func GetCreateConfigDialog() string {
     return `<div class="clickable" >
@@ -52,7 +52,7 @@ func GetCreateConfigDialog() string {
                         <input type="text"
                                placeholder="Token"
                                autofocus="true"
-                               onchange="Query"
+                               onchange="Token"
                                autocomplete="off" 
                                autocorrect="off" 
                                autocapitalize="off" 
@@ -100,7 +100,6 @@ func GetCreateConfigDialog() string {
                             <input type="text"
                                    value="{{html .Filename}}"
                                    placeholder="Certificate Authority"
-                                   autofocus="true"
                                    onchange="Query"
                                    autocomplete="off" 
                                    autocorrect="off" 
@@ -157,7 +156,7 @@ func GetConfirmDeleteDialog() string {
                 <div class="animated">
                     <div class="symbol trash"/>
                     <div class="bottom-toolbar">
-                        <button class="button ok" onclick="OkAccountView"/>
+                        <button class="button ok" onclick="OkTrashView"/>
                         <button class="button cancel" onclick="CancelTrashView"/>
                     </div>
                 </div>
@@ -182,7 +181,7 @@ func GetEmptySearchDialog() string {
                 <div class="animated">
                     <div class="symbol search"/>
                     <div class="bottom-toolbar">
-                        <button class="button add" onclick="OkAccountView"/>
+                        <button class="button add" onclick="CreateAccountView"/>
                     </div>
                 </div>
             </div>`
@@ -236,7 +235,7 @@ func GetAddDialog() string {
                         </div>
                         <div class="bottom-toolbar">
                             <div>
-                                <button class="button ok" onlick="OkAccountView"/>
+                                <button class="button ok" onclick="OkAccountView"/>
                                 <button class="button cancel" onclick="CancelAccountView"/>
                                 <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
                                 <button class="button delete" onclick="DeleteAccountView"/>
@@ -249,10 +248,12 @@ func GetAddDialog() string {
 
 // Show account details
 func GetAccountBody(account string) string {
+    imagePath := pass.FullPath + ImagePathSuffix
+
     // Some ugly solution since the fallback on image not found does not work...
     image := account
 
-    if _, err := os.Stat(prefix + account + ".png"); os.IsNotExist(err) {
+    if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
         image = "default"
     }
 
@@ -275,7 +276,7 @@ func GetAccountBody(account string) string {
                                         margin-left: auto; 
                                         margin-right: auto;
                                         padding-top: 30px">
-                                 <img src="` + prefix + image + `.png" 
+                                 <img src="` + imagePath + image + `.png" 
                                       style="max-width: 128px; "/>
                                  <h1>{{.Account}}</h1>
                             </div>
@@ -305,9 +306,10 @@ func GetAccountBody(account string) string {
                                    class="editable"/>
                         </div>
                         <div class="bottom-toolbar">
-                            <div style="">
-                                <button class="button ok" onlick="OkAccountView"/>
+                            <div>
+                                <button class="button ok" onclick="OkAccountView"/>
                                 <button class="button cancel" onclick="CancelAccountView"/>
+                                <button class="button copy" onclick="CopyAccountView"/>
                                 <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
                                 <button class="button delete" onclick="DeleteAccountView"/>
                             </div>
@@ -320,13 +322,15 @@ func GetAccountBody(account string) string {
 // List view
 func GetListBody(searchResults [] string) string {
     var accountListFormatted string
+    
+    imagePath := pass.FullPath + ImagePathSuffix
 
     // Iterate through the search results.
     for _, element := range searchResults {
         image := element
 
         // Revert to default icon if account icon does not exist.
-        if _, err := os.Stat(prefix + element + ".png"); os.IsNotExist(err) {
+        if _, err := os.Stat(imagePath + element + ".png"); os.IsNotExist(err) {
             image = "default"
         }
 
@@ -336,7 +340,7 @@ func GetListBody(searchResults [] string) string {
                                     <img src="%s%s.png"/>
                                     <div class="SearchListItemCaption">%s</div>
                                 </li>
-                             </a>`, element, prefix, image, element)
+                             </a>`, element, imagePath, image, element)
 
         // Concatenate list.
         accountListFormatted = accountListFormatted + item

@@ -45,6 +45,7 @@ type Configuration struct {
     } `json:"encrypted"`
     Host string `json:"host"`
     Port string `json:"port"`
+    CA   string  `json:"ca"`
 }
 
 

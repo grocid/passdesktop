@@ -36,29 +36,52 @@ import (
     "log"
     "encoding/json"
     "strings"
+    "bytes"
 )
 
-type VaultResponseGet struct {
-    Data struct {
-        Password  string `json:"password"`
+type (
+    UserData struct {
+        Password string `json:"password"`
         Username string  `json:"username"`
-    } `json:"data"`
-}
+    }
 
-type VaultResponseList struct {
-    Data struct {
-        Keys  []string `json:"keys"`
-    } `json:"data"`
-}
+    VaultStruct struct {
+        Data UserData `json:"data"`
+    }
 
-func DoGetRequest(s string) AccountInfo {
-    // Do a GET for the specified entry...
-    req, err := http.NewRequest("GET", pass.EntryPoint + "/" + s, nil)
-    req.Header.Add("X-Vault-Token", pass.DecryptedToken)
+    VaultResponseList struct {
+        Data struct {
+            Keys  []string `json:"keys"`
+        } `json:"data"`
+    }
+)
+
+const VaultTokenHeader = "X-Vault-Token"
+
+func DoRequest(operation string, s string) (*http.Response, error) {
+    // Create the request based on operation input.
+    req, err := http.NewRequest(operation, pass.EntryPoint + s, nil)
+
+    if err != nil {
+        return nil, err
+    }
+
+    // Add header and do a GET for the specified entry...
+    req.Header.Add(VaultTokenHeader, pass.DecryptedToken)
     resp, err := pass.Client.Do(req)
 
     // This should not happen, unless entry was deleted in the meantime...
-    // TODO: we should handle this more gracefully...
+    if err != nil {
+        return nil, err
+    }
+
+    return resp, nil
+}
+
+func DoGetRequest(s string) AccountInfo {
+    // Retrieve data for a specific account.
+    resp, err := DoRequest(http.MethodGet, "/" + s)
+
     if err != nil {
         log.Fatal(err)
     }
@@ -67,8 +90,12 @@ func DoGetRequest(s string) AccountInfo {
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
 
+    if err != nil {
+        log.Fatal(err)
+    }
+
     // ...and parse the JSON
-    r := VaultResponseGet{}
+    r := VaultStruct{}
     json.Unmarshal([]byte(body), &r)
     
     // ...generate a AccountInfo struct...
@@ -83,13 +110,48 @@ func DoGetRequest(s string) AccountInfo {
     return account
 }
 
+
+func DoPutRequest(data AccountInfo) error {
+    // Create payload
+    payload := &UserData {
+        Username: data.Username,
+        Password: data.Password,
+    }
+
+    // Encode data as JSON.
+    jsonPayload, err := json.Marshal(payload)
+    encodedPayload := bytes.NewBuffer(jsonPayload)
+
+    // Create the actual request.
+    req, err := http.NewRequest(http.MethodPut, 
+                                pass.EntryPoint + "/" + data.Name, 
+                                encodedPayload)
+    req.Header.Add(VaultTokenHeader, pass.DecryptedToken)
+
+    if err != nil {
+        return err
+    }
+
+    // Do a PUT with the associated data.
+    _, err = pass.Client.Do(req)
+
+    if err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func DoDeleteRequest(data AccountInfo) error {
+    _, err := DoRequest(http.MethodDelete, "/" + data.Name)
+
+    return err
+}
+
 func DoListRequest(s string) []string {
     // Do a LIST to get all entries.
-    req, err := http.NewRequest("LIST", pass.EntryPoint, nil)
-    req.Header.Add("X-Vault-Token", pass.DecryptedToken)
-    resp, err := pass.Client.Do(req)
+    resp, err := DoRequest("LIST", "")
 
-    // This should not happen.
     if err != nil {
         log.Fatal(err)
     }
@@ -97,6 +159,10 @@ func DoListRequest(s string) []string {
     // Read in the data...
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
+
+    if err != nil {
+        log.Fatal(err)
+    }
 
     // ...and parse JSON.
     r := VaultResponseList{}

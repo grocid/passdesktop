@@ -219,6 +219,21 @@ li:hover {
     -webkit-user-select: auto;
 }
 
+.button:active {
+    background: rgba(255, 255, 255, 0.3);
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: center center;
+    border-radius: 5px;
+    border: none;
+    color: white;
+    padding: 20px;
+    width: 32px;
+    height: 32px;
+    pointer-events: auto;
+    -webkit-user-select: auto;
+}
+
 .button.ok {
     background-image:url(../buttons/ok.png);
 }
@@ -231,8 +246,12 @@ li:hover {
     background-image:url(../buttons/cancel.png);
 }
 
+.button.copy{
+    background-image:url(../buttons/copy2.png);
+}
+
 .button.rerand{
-    background-image:url(../buttons/rerand.png);
+    background-image:url(../buttons/randomize2.png);
 }
 
 .button.add{
