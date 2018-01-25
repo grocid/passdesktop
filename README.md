@@ -15,7 +15,7 @@ token := AES-GCM-Decrypt(encrypted token, key, nonce).
 
 The decrypted `token` is kept in memory only.
 
-![Decrypting token](decryptingtoken.png)
+![Decrypting token](doc/decryptingtoken.png)
 
 The program is fairly short and easily auditable, if anyone feels encouraged to do it.
 
