@@ -31,25 +31,90 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
+    "os"
+    "log"
+    "fmt"
+    "time"
+    "path/filepath"
+    "net/http"
+    "crypto/x509"
+    "crypto/tls"
     "github.com/murlokswarm/app"
     _ "github.com/murlokswarm/mac"
 )
 
+type Application struct {
+    Client         *http.Client
+    Config         Configuration
+    DecryptedToken string
+    Locked         bool
+    Account        AccountInfo
+    CurrentView    int
+    SearchResult   []string
+    EntryPoint     string
+    FullPath       string
+}
+
 var (
     win app.Contexter
+    pass Application
 )
 
+const (
+    DefaultGeneratedPasswordLength = 32
+    ConfigFile = "/../Resources/config/config.json"
+)
+
+func ConfigureTLSClient() {
+    // Setup entrypoint
+    pass.EntryPoint = fmt.Sprintf("https://%s:%s/v1/secret", 
+                                  pass.Config.Host, 
+                                  pass.Config.Port)
+
+    // Create a TLS context...
+    caCertPool := x509.NewCertPool()
+    caCertPool.AppendCertsFromPEM([]byte(pass.Config.CA))
+
+    // ...and a client
+    pass.Client = &http.Client{
+        Transport: &http.Transport{
+            TLSClientConfig: &tls.Config{
+                RootCAs:      caCertPool,
+            },
+        },
+        Timeout: time.Second * 10,
+    }
+}
+
+func SetApplicationPath() {
+    dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
+    pass.FullPath = string(dir)
+}
+
 func main() {
+    // Pass is locked by default.
+    pass.Locked = true
+
+    // Get current directory to read config and icons.
+    SetApplicationPath()
+
+    // Load config file.
+    if _, err := os.Stat(pass.FullPath + ConfigFile); os.IsNotExist(err) {
+        log.Println("No config file present.")
+    } else {
+        pass.Config = LoadConfiguration(pass.FullPath + ConfigFile)
+        ConfigureTLSClient()
+    }
+
     app.OnLaunch = func() {
-        appMenu := &AppMainMenu{}    // Creates the AppMainMenu component.
-        if menuBar, ok := app.MenuBar(); ok { // Mounts the AppMainMenu component into the application menu bar.
+        // Creates the AppMainMenu component.
+        appMenu := &AppMainMenu{}
+
+        // Mounts the AppMainMenu component into the application menu bar.
+        if menuBar, ok := app.MenuBar(); ok {
             menuBar.Mount(appMenu)
         }
 
-        appMenuDock := &AppMainMenu{} // Creates another AppMainMenu.
-        if dock, ok := app.Dock(); ok {
-            dock.Mount(appMenuDock)
-        }
         // Create the main window
         win = newMainWindow()
     }
@@ -68,18 +133,21 @@ func newMainWindow() app.Contexter {
         Title:          "Pass",
         Width:          300,
         Height:         548,
-        Vibrancy:       app.VibeUltraDark,
+        Vibrancy:       app.VibeDark,
         TitlebarHidden: true,
-        FixedSize:      true,
+        //FixedSize:      true,
         OnClose: func() bool {
             win = nil
             return true
         },
     })
+
     // Create component...
     ps := &PassView{}
+   
     // ...and mount to window
     win.Mount(ps)  
+    
     // Return to context
     return win
 }

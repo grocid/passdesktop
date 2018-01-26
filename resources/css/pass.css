@@ -2,7 +2,7 @@ body {
     background-size: cover;
     background-position: center;
     color: white;
-    overflow: hidden; 
+    overflow: hidden;
 }
 
 ::-webkit-scrollbar { 
@@ -12,28 +12,31 @@ body {
 h1 {
     font-weight: 400; 
     font-size: 28px;
+    text-align: center; 
+    margin-left: auto; 
+    margin-right: auto;
 }
 
 h2 {
     font-weight: 400; 
     font-size: 18px;
-    margin-left: 7%;
-    margin-bottom: 0;
+    text-align: center; 
+    margin-left: auto; 
+    margin-right: auto;
 }
 
 h3 {
     font-size: 16px;
     font-weight: 400;
-    margin: 0; 
-    margin-left: 7%;
-    padding: 17px;
+    margin-left: auto; 
+    margin-right: auto;
 }
 
 p {
     font-weight: 400; 
     font-size: 14px;
-    margin-left: 7%;
-    width: 85%;
+    width: 90%;
+    margin-left: 5%;
 }
 
 a {
@@ -44,14 +47,17 @@ a:link {
     text-decoration: none;
 }
 
+span {
+    display: inline-block;
+    vertical-align: middle;
+}
+
 input {
-    margin-left: 5%;
-    width: 85%;
-    padding: 5pt;
+    width: 80%;
     border: 0;
     outline: none;
-    font-size: 18px;
-    background: rgba(30, 34, 37, 0.2);
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.2);
     color: white; 
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
@@ -59,10 +65,10 @@ input {
     pointer-events: auto;
     -webkit-user-select: auto;
 }
-
+/*
 input:focus {
     background: rgba(30, 34, 37, 0.25);
-}
+}*/
 
 ul {
     list-style-type: none;
@@ -75,14 +81,14 @@ li img {
     float: left;
     list-style-type: none;
     margin: 0 12px 0 0;
-    width: 48px;
+    width: 5vh;
+    /*max-width: 64px;*/
     border-radius: 7px;
 }
 
 li {
   list-style-type: none;
-  padding-top: 4px;
-  padding-left: 4px;
+  padding: 4px;
   overflow: auto;
   border-radius: 5px;
 }
@@ -118,6 +124,14 @@ li:hover {
     -o-animation: fadein 1s;
 }
 
+.scrollable {
+    overflow-y:scroll; 
+    max-height: -webkit-calc(100vh - 90px);
+    margin-top: 10px;
+    padding-top: -20px;
+    pointer-events: auto;
+}
+
 .selectable {
     -webkit-user-select: auto;
     pointer-events: auto;
@@ -128,46 +142,73 @@ li:hover {
 }
 
 .editable {
-    background-color: rgba(30, 34, 37, 0);
-    color: grey; 
-    margin-left: 5%;
+    background-color: rgba(255, 255, 255, 0.1);;
+    color: #f0f0f0; 
+    display: block;
+    margin : 0 auto;
+    width: 80%;
+    font-size: 16px;
     padding: 5pt;
-    width: 85%;
     border: 0;
     outline: none;
-    font-size: 18px;
     -webkit-border-radius: 5px;
     -moz-border-radius: 5px;
     border-radius: 5px;
     pointer-events: auto;
     -webkit-user-select: auto;
+    max-width: 300px
 }
 
 .editable:focus {
     color: white;
-    background-color: rgba(30, 34, 37, 0.25);
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 .editable.searchfield {
-    width: 78%;
-    background: rgba(30, 34, 37, 0.25) url(../symbols/search_small.png) no-repeat scroll 10px 10px;
+    background: rgba(255, 255, 255, 0.1) url(../symbols/search_small.png) no-repeat scroll 10px 10px;
     background-size: 14px;
     padding-left: 30px;
 }
 
 .editable.password {
-    width: 78%;
-    background: rgba(30, 34, 37, 0.25) url(../symbols/key_small.png) no-repeat scroll 10px 10px;
+    background: rgba(255, 255, 255, 0.1) url(../symbols/key_small.png) no-repeat scroll 10px 10px;
     background-size: 14px;
     padding-left: 30px;
+}
+
+.editable.username {
+    background: rgba(255, 255, 255, 0.1) url(../symbols/user_small.png) no-repeat scroll 10px 10px;
+    background-size: 14px;
+    padding-left: 30px;
+}
+
+.editable.server {
+    background: rgba(255, 255, 255, 0.1) url(../symbols/server_small.png) no-repeat scroll 10px 10px;
+    background-size: 14px;
+    padding-left: 30px;
+}
+
+.editable.port {
+    background: rgba(255, 255, 255, 0.1) url(../symbols/port_small.png) no-repeat scroll 10px 10px;
+    background-size: 14px;
+    padding-left: 30px;
+}
+
+.editable.ca {
+    background: rgba(255, 255, 255, 0.1) url(../symbols/port_small.png) no-repeat scroll 10px 10px;
+    background-size: 14px;
+    padding-left: 30px;
+    width: 60%;
+}
+
+.Field {
+    float: left;
 }
 
 .WindowLayout {
     position: fixed;
     width: 100%;
     height: 100%;
-    justify-content: center;
-    align-items: center;
     word-wrap: break-word;
 }
 
@@ -180,9 +221,7 @@ li:hover {
 .SearchListItemCaption {
     font-size: 16px;
     font-weight: 400;
-    margin: 0; 
-    margin-left: 7%;
-    padding: 17px;
+    padding-top: -webkit-calc(2vh - 8px);
 }
 
 .PasswordEntryLayout {
@@ -246,12 +285,8 @@ li:hover {
     background-image:url(../buttons/cancel.png);
 }
 
-.button.copy{
-    background-image:url(../buttons/copy2.png);
-}
-
 .button.rerand{
-    background-image:url(../buttons/randomize2.png);
+    background-image:url(../buttons/randomize.png);
 }
 
 .button.add{

@@ -39,211 +39,202 @@ import (
 const ImagePathSuffix = "/../Resources/iconpack/"
 
 func GetCreateConfigDialog() string {
-    return `<div class="clickable" >
-                <div class="animated">
-                    <div style="text-align: center; 
-                                margin-left: auto; 
-                                margin-right: auto;
-                                padding-top: 30px">
-                        <h1>Welcome</h1>
-                    </div>
-                    <p>It is the first time you are using Pass Desktop. Please enter credentials.</p>
-                        <h2 style="margin-bottom: 15px">Secrets</h2>
-                        <input type="text"
-                               placeholder="Token"
-                               autofocus="true"
-                               onchange="Token"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>
-                        <input type="password"
-                               placeholder="Password"
-                               onchange="Password"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>
-                        <input type="password"
-                               placeholder="Password"
-                               onchange="PasswordAgain"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>
-                        <h2 style="margin-top: 15px; margin-bottom: 15px">Server</h2>
-                        <input type="text"
-                               placeholder="myserver.com"
-                               onchange="Hostname"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>
-                        <input type="text"
-                               placeholder="8001"
-                               onchange="Port"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="selectable"/>
-                        <div id="field">
-                            <input type="text"
-                                   value="{{html .Filename}}"
-                                   placeholder="Certificate Authority"
-                                   onchange="Query"
-                                   autocomplete="off" 
-                                   autocorrect="off" 
-                                   autocapitalize="off" 
-                                   spellcheck="false"
-                                   style="max-width: 220px"/>
-                              <button class="button add" 
-                                      style="background-size: 14px; 
-                                             padding: 10px;" 
-                                      onclick="PickFile"/>
-                        </div>
-                    <div class="bottom-toolbar">
-                        <button class="button ok" onclick="CreateConfig"/>
-                    </div>
-                </div>
-            </div>`
+    return `
+<div class="WindowLayout" >
+    <div class="animated">
+        <div style="padding-top: 30px">
+            <h1>Welcome</h1>
+        </div>
+        <p>
+            “Well, all information looks like noise until you break the code.”
+        </p>
+        <p>
+            ― Neal Stephenson, Snow Crash
+        </p>
+        <p>
+            <input type="text"
+                   placeholder="Token"
+                   autofocus="true"
+                   onchange="Token"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable username"/>
+        </p><p>
+            <input type="password"
+                   placeholder="Password"
+                   onchange="Password"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable password"/>
+            <input type="password"
+                   placeholder="Password"
+                   onchange="PasswordAgain"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable password"/>
+        </p><p>
+            <input type="text"
+                   placeholder="myserver.com"
+                   onchange="Hostname"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable server"/>
+            <input type="text"
+                   placeholder="8001"
+                   onchange="Port"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable port"/>
+        </p>
+        <div class="bottom-toolbar">
+            <button class="button ok" onclick="PickFileAndCreateConfig"/>
+        </div>
+    </div>
+</div>`
 }
 
 // Password-input dialog
 func GetPasswordInput() string {
-    return `<div class="WindowLayout">
-                <div class="animated">
-                    <div class="PasswordEntryLayout">
-                        <input type="password"
-                               placeholder="Password"
-                               autofocus="true"
-                               onchange="Unlock"
-                               autocomplete="off" 
-                               autocorrect="off" 
-                               autocapitalize="off" 
-                               spellcheck="false"
-                               selectable="on" 
-                               class="editable password"/>
-                    </div>
-                    <div class="symbol lock"/>
-                </div>
-            </div>`
+    return `
+<div class="WindowLayout">
+    <div class="animated">
+        <div class="PasswordEntryLayout">
+            <input type="password"
+                   placeholder="Password"
+                   autofocus="true"
+                   onchange="Unlock"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable password"/>
+        </div>
+        <div class="symbol lock"/>
+    </div>
+</div>`
 }
 
 func GetConfirmDeleteDialog() string {
-    return `<div class="WindowLayout">    
-                <div class="SearchLayout">
-                    <input type="text"
-                           value="{{html .Query}}"
-                           placeholder="Account"
-                           onchange="Search"
-                           autocomplete="off" 
-                           autocorrect="off" 
-                           autocapitalize="off" 
-                           spellcheck="false"
-                           selectable="on" 
-                           class="editable searchfield"/>
-                </div>
-                <div class="animated">
-                    <div class="symbol trash"/>
-                    <div class="bottom-toolbar">
-                        <button class="button ok" onclick="OkTrashView"/>
-                        <button class="button cancel" onclick="CancelTrashView"/>
-                    </div>
-                </div>
-            </div>`
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value="{{html .Query}}"
+               placeholder="Account"
+               onchange="Search"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+    </div>
+    <div class="animated">
+        <div class="symbol trash"/>
+        <div class="bottom-toolbar">
+            <button class="button ok" onclick="OkTrashView"/>
+            <button class="button cancel" onclick="CancelTrashView"/>
+        </div>
+    </div>
+</div>`
 }
 
 func GetEmptySearchDialog() string {
-    return `<div class="WindowLayout">    
-                <div class="SearchLayout">
-                    <input type="text"
-                           value="{{html .Query}}"
-                           placeholder="Account"
-                           autofocus="true"
-                           onchange="Search"
-                           autocomplete="off" 
-                           autocorrect="off" 
-                           autocapitalize="off" 
-                           spellcheck="false"
-                           selectable="on" 
-                           class="editable searchfield"/>
-                </div>
-                <div class="animated">
-                    <div class="symbol search"/>
-                    <div class="bottom-toolbar">
-                        <button class="button add" onclick="CreateAccountView"/>
-                    </div>
-                </div>
-            </div>`
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value="{{html .Query}}"
+               placeholder="Account"
+               autofocus="true"
+               onchange="Search"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+    </div>
+    <div class="animated">
+        <div class="symbol search"/>
+        <div class="bottom-toolbar">
+            <button class="button add" onclick="CreateAccountView"/>
+        </div>
+    </div>
+</div>`
 }
 
 
 func GetAddDialog() string {
-    return `<div class="WindowLayout">    
-                <div class="SearchLayout">
-                    <input type="text"
-                           value="{{html .Query}}"
-                           placeholder="Account"
-                           onchange="Search"
-                           autocomplete="off" 
-                           autocorrect="off" 
-                           autocapitalize="off" 
-                           spellcheck="false"
-                           selectable="on" 
-                           class="editable searchfield"/>
-                    <div  style="overflow-y:scroll; 
-                         max-height:335px;
-                         height:335px;"
-                         clickable="on" 
-                         class="clickable">
-                        <div class="animated">
-                            <h1>{{.Account}}</h1>
-                            <h2>Username</h2>
-                            <input name="username"
-                                   type="text"
-                                   value="{{html .Username}}"
-                                   placeholder="Username"
-                                   onchange="Username"
-                                   autocomplete="off" 
-                                   autocorrect="off" 
-                                   autocapitalize="off" 
-                                   spellcheck="false"
-                                   selectable="on" 
-                                   class="editable"/>
-                            <h2>Password</h2>
-                            <input name="password"
-                                   type="text"
-                                   value="{{html .Password}}"
-                                   placeholder="Password"
-                                   onchange="Password"
-                                   autocomplete="off" 
-                                   autocorrect="off" 
-                                   autocapitalize="off" 
-                                   spellcheck="false"
-                                   selectable="on" 
-                                   class="editable"/>
-                        </div>
-                        <div class="bottom-toolbar">
-                            <div>
-                                <button class="button ok" onclick="OkAccountView"/>
-                                <button class="button cancel" onclick="CancelAccountView"/>
-                                <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
-                                <button class="button delete" onclick="DeleteAccountView"/>
-                            </div>
-                        </div>
-                    </div>
-                 </div>
-            </div>`
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value="{{html .Query}}"
+               placeholder="Account"
+               onchange="Search"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+        <div clickable="on" 
+             class="scrollable">
+            <div class="animated">
+                <h1>{{.Account}}</h1>
+                <h2>Username</h2>
+                <input name="username"
+                       type="text"
+                       value="{{html .Username}}"
+                       placeholder="Username"
+                       onchange="Username"
+                       autocomplete="off" 
+                       autocorrect="off" 
+                       autocapitalize="off" 
+                       spellcheck="false"
+                       selectable="on" 
+                       class="editable"/>
+                <h2>Password</h2>
+                <input name="password"
+                       type="text"
+                       value="{{html .Password}}"
+                       placeholder="Password"
+                       onchange="Password"
+                       autocomplete="off" 
+                       autocorrect="off" 
+                       autocapitalize="off" 
+                       spellcheck="false"
+                       selectable="on" 
+                       class="editable"/>
+            </div>
+            <div class="bottom-toolbar">
+                <div>
+                    <button class="button ok" onclick="OkAccountView"/>
+                    <button class="button cancel" onclick="CancelAccountView"/>
+                    <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
+                    <button class="button delete" onclick="DeleteAccountView"/>
+                </div>
+            </div>
+        </div>
+     </div>
+</div>`
 }
 
 // Show account details
@@ -257,66 +248,64 @@ func GetAccountBody(account string) string {
         image = "default"
     }
 
-    return `<div class="WindowLayout">    
-                <div class="SearchLayout">
-                    <input type="text"
-                           value="{{html .Query}}"
-                           placeholder="Account"
-                           onchange="Search"
-                           autocomplete="off" 
-                           autocorrect="off" 
-                           autocapitalize="off" 
-                           spellcheck="false"
-                           selectable="on" 
-                           class="editable searchfield"/>
-                      <div clickable="on" 
-                           class="clickable">
-                          <div class="animated">
-                            <div style="text-align: center; 
-                                        margin-left: auto; 
-                                        margin-right: auto;
-                                        padding-top: 30px">
-                                 <img src="` + imagePath + image + `.png" 
-                                      style="max-width: 128px; "/>
-                                 <h1>{{.Account}}</h1>
-                            </div>
-                            <h2>Username</h2>
-                            <input name="username"
-                                   type="text"
-                                   value="{{html .Username}}"
-                                   placeholder="Username"
-                                   onchange="Username"
-                                   autocomplete="off" 
-                                   autocorrect="off" 
-                                   autocapitalize="off" 
-                                   spellcheck="false"
-                                   selectable="on" 
-                                   class="editable"/>
-                            <h2>Password</h2>
-                            <input name="password"
-                                   type="text"
-                                   value="{{html .Password}}"
-                                   placeholder="Password"
-                                   onchange="Password"
-                                   autocomplete="off" 
-                                   autocorrect="off" 
-                                   autocapitalize="off" 
-                                   spellcheck="false"
-                                   selectable="on" 
-                                   class="editable"/>
-                        </div>
-                        <div class="bottom-toolbar">
-                            <div>
-                                <button class="button ok" onclick="OkAccountView"/>
-                                <button class="button cancel" onclick="CancelAccountView"/>
-                                <button class="button copy" onclick="CopyAccountView"/>
-                                <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
-                                <button class="button delete" onclick="DeleteAccountView"/>
-                            </div>
-                        </div>
-                    </div>
-                 </div>
-            </div>`
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value="{{html .Query}}"
+               placeholder="Account"
+               onchange="Search"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+          <div clickable="on" 
+               class="clickable">
+              <div class="animated">
+                <div style="text-align: center; 
+                            margin-left: auto; 
+                            margin-right: auto;
+                            padding-top: 30px">
+                     <img src="` + imagePath + image + `.png" 
+                          style="max-width: 128px; "/>
+                     <h1>{{.Account}}</h1>
+                </div>
+                <input name="username"
+                       type="text"
+                       value="{{html .Username}}"
+                       placeholder="Username"
+                       onchange="Username"
+                       autocomplete="off" 
+                       autocorrect="off" 
+                       autocapitalize="off" 
+                       spellcheck="false"
+                       selectable="on" 
+                       class="editable username"/><br/>
+                <input name="password"
+                       type="text"
+                       value="{{html .Password}}"
+                       placeholder="Password"
+                       onchange="Password"
+                       autocomplete="off" 
+                       autocorrect="off" 
+                       autocapitalize="off" 
+                       spellcheck="false"
+                       selectable="on" 
+                       class="editable password"/>
+            </div>
+            <div class="bottom-toolbar">
+                <div>
+                    <button class="button ok" onclick="OkAccountView"/>
+                    <button class="button cancel" onclick="CancelAccountView"/>
+                    <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
+                    <button class="button delete" onclick="DeleteAccountView"/>
+                </div>
+            </div>
+        </div>
+     </div>
+</div>`
 }
 
 // List view
@@ -338,7 +327,7 @@ func GetListBody(searchResults [] string) string {
         item := fmt.Sprintf(`<a href="PassView?Account=%s">
                                 <li>
                                     <img src="%s%s.png"/>
-                                    <div class="SearchListItemCaption">%s</div>
+                                    <div class="SearchListItemCaption"><span>%s</span></div>
                                 </li>
                              </a>`, element, imagePath, image, element)
 
@@ -348,29 +337,27 @@ func GetListBody(searchResults [] string) string {
 
 
   // <img src="https://{{$element}}/favicon.ico"/>
-    return `<div class="WindowLayout">    
-                <div class="SearchLayout">
-                    <input type="text"
-                           value="{{html .Query}}"
-                           placeholder="Account"
-                           autofocus="true"
-                           onchange="Search"
-                           autocomplete="off" 
-                           autocorrect="off" 
-                           autocapitalize="off" 
-                           spellcheck="false"
-                           selectable="on" 
-                           class="editable searchfield"/>
-                      <div  style="overflow-y:scroll; 
-                                   max-height:448px; 
-                                   margin-top:20px" 
-                            clickable="on" 
-                            class="clickable">
-                            <div class="animated">
-                                <ul>` + accountListFormatted + `
-                                </ul>
-                          </div>
-                      </div>
-                  </div>
-              </div>`
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value="{{html .Query}}"
+               placeholder="Account"
+               autofocus="true"
+               onchange="Search"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+         <div clickable="on" 
+              class="scrollable">
+            <div class="animated">
+                <ul>` + accountListFormatted + `
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>`
 }

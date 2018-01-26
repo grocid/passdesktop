@@ -32,7 +32,6 @@ package main
 
 import (
     "os"
-    "io"
     "log"
     "encoding/json"
 )
@@ -46,33 +45,6 @@ type Configuration struct {
     Host string `json:"host"`
     Port string `json:"port"`
     CA   string  `json:"ca"`
-}
-
-
-func CopyFile(source string, destination string) error {
-    s, err := os.Open(source)
-
-    // If error, we handle it nicely.
-    if err != nil {
-        return err
-    }
-
-    // Create destination file.
-    defer s.Close()
-    d, err := os.Create(destination)
-
-    // Again, fingers crossed.
-    if err != nil {
-        return err
-    }
-
-    // Copy contents
-    if _, err := io.Copy(d, s); err != nil {
-        d.Close()
-        return err
-    }
-
-    return d.Close()
 }
 
 func LoadConfiguration(file string) Configuration {

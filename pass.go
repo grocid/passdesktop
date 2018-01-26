@@ -31,18 +31,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
-    "os"
     "log"
     "fmt"
-    "time"
     "strconv"
     "path/filepath"
     "net/url"
-    "net/http"
-    "crypto/x509"
-    "crypto/tls"
     "github.com/murlokswarm/app"
-    "github.com/atotto/clipboard"
 )
 
 type (
@@ -64,17 +58,6 @@ type (
         Password       string
     }
 
-    Application struct {
-        Client         *http.Client
-        Config         Configuration
-        DecryptedToken string
-        Locked         bool
-        Account        AccountInfo
-        CurrentView    int
-        SearchResult   []string
-        EntryPoint     string
-        FullPath       string
-    }
 )
 
 const (
@@ -83,12 +66,7 @@ const (
     ViewConfirmDeleteDialog = 2
     ViewCreateAccountDialog = 3
     ViewUnlockDialog = 4
-
-    DefaultGeneratedPasswordLength = 32
-    ConfigFile = "/../Resources/config/config.json"
 )
-
-var pass Application
 
 func ClearAccountInformation(h *PassView) {
     h.Account = ""
@@ -98,6 +76,7 @@ func ClearAccountInformation(h *PassView) {
 }
 
 func (h *PassView) Render() string {
+    fmt.Println("HEJ")
     // Clear all account data from UI
     ClearAccountInformation(h)
 
@@ -179,7 +158,6 @@ func (h *PassView) PickFile(arg app.ChangeArg) {
                 app.Render(h)
             },
         })
-
 }
 
 func (h *PassView) CreateConfig(arg app.ChangeArg) {
@@ -291,10 +269,6 @@ func (h *PassView) CancelTrashView(arg app.ChangeArg) {
     app.Render(h)
 }
 
-func (h *PassView) CopyAccountView(arg app.ChangeArg) {
-    clipboard.WriteAll(pass.Account.Password)
-}
-
 func (h *PassView) OkAccountView(arg app.ChangeArg) {
     // Update internal struct holding information
     // from UI.
@@ -354,46 +328,7 @@ func (h *PassView) Search(arg app.ChangeArg) {
     app.Render(h)
 }
 
-func ConfigureTLSClient() {
-    // Setup entrypoint
-    pass.EntryPoint = fmt.Sprintf("https://%s:%s/v1/secret", 
-                                  pass.Config.Host, 
-                                  pass.Config.Port)
-
-    // Create a TLS context...
-    caCertPool := x509.NewCertPool()
-    caCertPool.AppendCertsFromPEM([]byte(pass.Config.CA))
-
-    // ...and a client
-    pass.Client = &http.Client{
-        Transport: &http.Transport{
-            TLSClientConfig: &tls.Config{
-                RootCAs:      caCertPool,
-            },
-        },
-        Timeout: time.Second * 10,
-    }
-}
-
-func SetApplicationPath() {
-    dir, _ := filepath.Abs(filepath.Dir(os.Args[0]))
-    pass.FullPath = string(dir)
-}
-
 func init() {
-    // Pass is locked by default
-    pass.Locked = true
-
-    SetApplicationPath()
-
-    // Load config file
-    if _, err := os.Stat(pass.FullPath + ConfigFile); os.IsNotExist(err) {
-        log.Println("No config file present.")
-    } else {
-        pass.Config = LoadConfiguration(pass.FullPath + ConfigFile)
-        ConfigureTLSClient()
-    }
-
     // Register UI component
     app.RegisterComponent(&PassView{})
 }
