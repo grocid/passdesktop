@@ -32,7 +32,7 @@ package main
 
 import (
     "log"
-    "fmt"
+    "net/http"
     "strconv"
     "path/filepath"
     "net/url"
@@ -40,6 +40,18 @@ import (
 )
 
 type (
+    Application struct {
+        Client         *http.Client
+        Config         Configuration
+        DecryptedToken string
+        Locked         bool
+        Account        AccountInfo
+        CurrentView    int
+        SearchResult   []string
+        EntryPoint     string
+        FullPath       string
+    }
+
     PassView struct {
         Query          string 
         Account        string
@@ -57,15 +69,6 @@ type (
         Username       string
         Password       string
     }
-
-)
-
-const (
-    ViewSearchDialog  = 0
-    ViewAccountDialog = 1
-    ViewConfirmDeleteDialog = 2
-    ViewCreateAccountDialog = 3
-    ViewUnlockDialog = 4
 )
 
 func ClearAccountInformation(h *PassView) {
@@ -76,7 +79,6 @@ func ClearAccountInformation(h *PassView) {
 }
 
 func (h *PassView) Render() string {
-    fmt.Println("HEJ")
     // Clear all account data from UI
     ClearAccountInformation(h)
 
@@ -90,6 +92,8 @@ func (h *PassView) Render() string {
         return GetPasswordInput()
     }
 
+    log.Println(h.Query)
+
     // Get the view from CurrentView and display
     // accordingly
     switch pass.CurrentView {
@@ -100,6 +104,10 @@ func (h *PassView) Render() string {
             } else {
                 return GetEmptySearchDialog()
             }
+
+        case ViewSearchClearedDialog:
+            h.Query = ""
+            return GetListBody(pass.SearchResult)
 
         case ViewAccountDialog:
             // Pass information from internal struct
@@ -112,6 +120,12 @@ func (h *PassView) Render() string {
 
         case ViewConfirmDeleteDialog:
             return GetConfirmDeleteDialog()
+
+        case ViewCreateAccountDialog:
+            return GetAddDialog()
+
+        case ViewAboutDialog:
+            return GetAboutDialog()
 
         default:
             log.Fatal(pass.CurrentView)
@@ -153,7 +167,6 @@ func (h *PassView) PickFile(arg app.ChangeArg) {
             NoDir:             true,
             NoFile:            false,
             OnPick: func(filenames []string) {
-                //CopyFile(filenames[0], CAFile)
                 h.Filename = filepath.Base(filenames[0])
                 app.Render(h)
             },
@@ -191,11 +204,6 @@ func (h *PassView) CreateConfig(arg app.ChangeArg) {
         log.Println(err)
         return
     }
-/*
-    if _, err := os.Stat(CAFile); os.IsNotExist(err) {
-        log.Println(err)
-        return
-    }*/
 
     // Put data into config struct
     pass.Config.Encrypted.Token = token

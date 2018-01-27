@@ -40,7 +40,7 @@ const ImagePathSuffix = "/../Resources/iconpack/"
 
 func GetCreateConfigDialog() string {
     return `
-<div class="WindowLayout" >
+<div class="WindowLayout">
     <div class="animated">
         <div style="padding-top: 30px">
             <h1>Welcome</h1>
@@ -162,7 +162,6 @@ func GetEmptySearchDialog() string {
         <input type="text"
                value="{{html .Query}}"
                placeholder="Account"
-               autofocus="true"
                onchange="Search"
                autocomplete="off" 
                autocorrect="off" 
@@ -239,6 +238,9 @@ func GetAddDialog() string {
 
 // Show account details
 func GetAccountBody(account string) string {
+
+    fmt.Println("GetAccountBody")
+
     imagePath := pass.FullPath + ImagePathSuffix
 
     // Some ugly solution since the fallback on image not found does not work...
@@ -261,49 +263,46 @@ func GetAccountBody(account string) string {
                spellcheck="false"
                selectable="on" 
                class="editable searchfield"/>
-          <div clickable="on" 
-               class="clickable">
-              <div class="animated">
-                <div style="text-align: center; 
-                            margin-left: auto; 
-                            margin-right: auto;
-                            padding-top: 30px">
-                     <img src="` + imagePath + image + `.png" 
-                          style="max-width: 128px; "/>
-                     <h1>{{.Account}}</h1>
-                </div>
-                <input name="username"
-                       type="text"
-                       value="{{html .Username}}"
-                       placeholder="Username"
-                       onchange="Username"
-                       autocomplete="off" 
-                       autocorrect="off" 
-                       autocapitalize="off" 
-                       spellcheck="false"
-                       selectable="on" 
-                       class="editable username"/><br/>
-                <input name="password"
-                       type="text"
-                       value="{{html .Password}}"
-                       placeholder="Password"
-                       onchange="Password"
-                       autocomplete="off" 
-                       autocorrect="off" 
-                       autocapitalize="off" 
-                       spellcheck="false"
-                       selectable="on" 
-                       class="editable password"/>
+        <div class="animated">
+            <div style="text-align: center; 
+                        margin-left: auto; 
+                        margin-right: auto;
+                        padding-top: 30px">
+                 <img src="` + imagePath + image + `.png" 
+                      style="max-width: 128px; "/>
+                 <h1>{{.Account}}</h1>
             </div>
-            <div class="bottom-toolbar">
-                <div>
-                    <button class="button ok" onclick="OkAccountView"/>
-                    <button class="button cancel" onclick="CancelAccountView"/>
-                    <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
-                    <button class="button delete" onclick="DeleteAccountView"/>
-                </div>
-            </div>
-        </div>
+            <input name="username"
+                   type="text"
+                   value="{{html .Username}}"
+                   placeholder="Username"
+                   onchange="Username"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable username"/><br/>
+            <input name="password"
+                   type="text"
+                   value="{{html .Password}}"
+                   placeholder="Password"
+                   onchange="Password"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable password"/>
+          </div>
+          <div class="bottom-toolbar">
+              <div>
+                  <button class="button ok" onclick="OkAccountView"/>
+                  <button class="button cancel" onclick="CancelAccountView"/>
+                  <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
+                  <button class="button delete" onclick="DeleteAccountView"/>
+              </div>
+          </div>
      </div>
 </div>`
 }
@@ -334,6 +333,7 @@ func GetListBody(searchResults [] string) string {
         // Concatenate list.
         accountListFormatted = accountListFormatted + item
     }
+    fmt.Println("GetListBody")
 
 
   // <img src="https://{{$element}}/favicon.ico"/>
@@ -343,8 +343,8 @@ func GetListBody(searchResults [] string) string {
         <input type="text"
                value="{{html .Query}}"
                placeholder="Account"
-               autofocus="true"
                onchange="Search"
+               autofocus="true"
                autocomplete="off" 
                autocorrect="off" 
                autocapitalize="off" 
@@ -357,6 +357,38 @@ func GetListBody(searchResults [] string) string {
                 <ul>` + accountListFormatted + `
                 </ul>
             </div>
+        </div>
+    </div>
+</div>`
+}
+
+func GetAboutDialog() string {
+    imagePath := pass.FullPath + ImagePathSuffix
+    return `
+<div class="WindowLayout">
+    <div class="animated">
+        <div style="text-align: center; 
+                    margin-left: auto; 
+                    margin-right: auto;
+                    padding-top: 80px">
+             <img src="` + imagePath + `default.png" 
+                  style="max-width: 128px; "/>
+             <h1>Pass Desktop</h1>
+        </div>
+        <h2>
+            This software was written by 
+        </h2>
+        <h2>
+            Carl Löndahl. 
+        </h2>
+        <h2>
+            www.grocid.net
+        </h2>
+        <p>
+            Copyright © 2018 Carl Löndahl. All rights reserved
+        </p>
+        <div class="bottom-toolbar">
+            <button class="button ok" onclick="CancelAccountView"/>
         </div>
     </div>
 </div>`

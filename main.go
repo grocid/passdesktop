@@ -43,26 +43,26 @@ import (
     _ "github.com/murlokswarm/mac"
 )
 
-type Application struct {
-    Client         *http.Client
-    Config         Configuration
-    DecryptedToken string
-    Locked         bool
-    Account        AccountInfo
-    CurrentView    int
-    SearchResult   []string
-    EntryPoint     string
-    FullPath       string
-}
-
 var (
     win app.Contexter
     pass Application
 )
 
 const (
+    ViewSearchDialog = 0
+    ViewSearchClearedDialog = 1
+    ViewAccountDialog = 2
+    ViewConfirmDeleteDialog = 3
+    ViewCreateAccountDialog = 4
+    ViewUnlockDialog = 5
+    ViewAboutDialog = 6
+)
+
+const (
+    UseArgon2ForKeyDerivation = false
     DefaultGeneratedPasswordLength = 32
-    ConfigFile = "/../Resources/config/config.json"
+    ConfigFile = "/config/config.json"
+    //ConfigFile = "/../Resources/config/config.json"
 )
 
 func ConfigureTLSClient() {
