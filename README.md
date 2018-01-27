@@ -36,10 +36,6 @@ The program is fairly short and easily auditable, if anyone feels encouraged to 
 
 ## Not implemented...
 
- - Generation of master password (locally)
- - Generation of new accounts
- - Changing account details remotely (username and password)
- - Remote deletion of accounts
  - Mutual authentication as an option for communicating with Vault
 
 These, quite essential, features are of course already supported in [pass](https://github.com/grocid/pass). 
