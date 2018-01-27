@@ -48,10 +48,7 @@ var (
     win app.Contexter
     pass Application
 )
- type   Entry struct {
-        Name           string
-        Encrypted      string
-    }
+
 const (
     ViewSearchDialog = 0
     ViewSearchClearedDialog = 1

@@ -40,8 +40,10 @@ import (
 )
 
 type (
-
-
+    Entry struct {
+        Name           string
+        Encrypted      string
+    }
 
     Application struct {
         Client         *http.Client
@@ -90,7 +92,7 @@ func (h *PassView) Render() string {
         log.Println("Locked")
         return GetPasswordInput()
     }
-    
+
     // Clear all account data from UI
     AccountClearInformation(h)
 
