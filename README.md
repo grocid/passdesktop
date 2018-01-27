@@ -38,8 +38,6 @@ The program is fairly short and easily auditable, if anyone feels encouraged to 
 
  - Mutual authentication as an option for communicating with Vault
 
-These, quite essential, features are of course already supported in [pass](https://github.com/grocid/pass). 
-
 ## Seurity considerations
 
  - To use mutual authentication. This requires each accessor/user to have a valid private key. Private key can be encrypted with master password.
