@@ -70,8 +70,8 @@ go build
 ```
 which creates a standalone executable. To build a real .App, I suggest using [macpack](https://github.com/murlokswarm/macpack).
 
-The application will try to load your CA certificate `ca.crt`, located in the same folder as the executeable, along with `config.json`.
-The file `ca.crt` will be used to authenticate the server you are running Vault on. When you setup your server, you generated a CA. This is the file you need.
+The application will try to load your CA certificate, located as an entry inside `config.json`.
+CA will be used to authenticate the server you are running Vault on (we do not really need anything else than a self-signed certificate). When you setup your server, you generated a CA. This is the file you need.
 The configuration `config.json` is a file of the format
 
 ```
@@ -85,7 +85,7 @@ The configuration `config.json` is a file of the format
     "ca": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 }
 ```
-To get the encrypted part, you need to invoke the function `LockToken (plaintext string, password string)` in `crypto.go`:
+(*Slightly deprecated*) To get the encrypted part, you need to invoke the function `LockToken (plaintext string, password string)` in `crypto.go`:
 ```
 LockToken("your token", "your master password")
 ```
