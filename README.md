@@ -88,6 +88,7 @@ The configuration `config.json` is a file of the format
 	},
 	"host": "myserver.com",
 	"port": "8001"
+    "ca": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 }
 ```
 To get the encrypted part, you need to invoke the function `LockToken (plaintext string, password string)` in `crypto.go`:
