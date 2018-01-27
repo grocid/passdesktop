@@ -38,20 +38,7 @@ import (
      "golang.org/x/crypto/chacha20poly1305"
   )
 
-func EncryptChacha20Poly1305(plaintext []byte, key []byte) ([]byte, []byte, error) {
-    // Create a key data structure
-    chacha20aead, err := chacha20poly1305.New(key)
-
-    if err != nil {
-        return []byte{}, []byte{}, err
-    }
-
-    nonce := make([]byte, chacha20poly1305.NonceSize)
-
-    return chacha20aead.Seal(nil, nonce, plaintext, nil), nonce, nil
-}
-
-func DecryptChacha20Poly1305(ciphertext []byte, key []byte, nonce []byte) ([]byte, error) {
+func Chacha20Poly1305Encrypt(plaintext []byte, key []byte) ([]byte, error) {
     // Create a key data structure
     chacha20aead, err := chacha20poly1305.New(key)
 
@@ -59,7 +46,27 @@ func DecryptChacha20Poly1305(ciphertext []byte, key []byte, nonce []byte) ([]byt
         return []byte{}, err
     }
 
-    plaintext, err := chacha20aead.Open(nil, nonce, ciphertext, nil)
+    nonce := make([]byte, chacha20poly1305.NonceSize)
+
+    // ...using a CSPRNG...
+    if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+        return []byte{}, err
+    }
+
+    ciphertext := chacha20aead.Seal(nil, nonce, plaintext, nil)
+
+    return append(nonce, ciphertext...), nil
+}
+
+func Chacha20Poly1305Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
+    // Create a key data structure
+    chacha20aead, err := chacha20poly1305.New(key)
+
+    if err != nil || len(ciphertext) < chacha20poly1305.NonceSize {
+        return []byte{}, err
+    }
+
+    plaintext, err := chacha20aead.Open(nil, ciphertext[:12], ciphertext[12:], nil)
 
     if err != nil {
         return []byte{}, err

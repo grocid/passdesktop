@@ -148,8 +148,8 @@ func GetConfirmDeleteDialog() string {
     <div class="animated">
         <div class="symbol trash"/>
         <div class="bottom-toolbar">
-            <button class="button ok" onclick="OkTrashView"/>
-            <button class="button cancel" onclick="CancelTrashView"/>
+            <button class="button ok" onclick="AccountTrashOk"/>
+            <button class="button cancel" onclick="AccountTrashCancel"/>
         </div>
     </div>
 </div>`
@@ -173,14 +173,23 @@ func GetEmptySearchDialog() string {
     <div class="animated">
         <div class="symbol search"/>
         <div class="bottom-toolbar">
-            <button class="button add" onclick="CreateAccountView"/>
+            <button class="button add" onclick="AccountCreate"/>
         </div>
     </div>
 </div>`
 }
 
 
-func GetAddDialog() string {
+func GetAddDialog(account string) string {
+    // Get the path
+    imagePath := pass.FullPath + ImagePathSuffix
+
+    // Some ugly solution since the fallback on image not found does not work...
+    image := account;
+    if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
+        image = "default"
+    }
+
     return `
 <div class="WindowLayout">    
     <div class="SearchLayout">
@@ -194,58 +203,67 @@ func GetAddDialog() string {
                spellcheck="false"
                selectable="on" 
                class="editable searchfield"/>
-        <div clickable="on" 
-             class="scrollable">
-            <div class="animated">
-                <h1>{{.Account}}</h1>
-                <h2>Username</h2>
-                <input name="username"
+        <div class="animated">
+            <div style="text-align: center; 
+                        margin-left: auto; 
+                        margin-right: auto;
+                        padding-top: 30px">
+                 <img src="` + imagePath + image + `.png" 
+                      style="max-width: 128px; "/>
+                 <p><input name="Name"
                        type="text"
-                       value="{{html .Username}}"
-                       placeholder="Username"
-                       onchange="Username"
+                       value="{{html .Account}}"
+                       placeholder="New account"
+                       onchange="Account"
                        autocomplete="off" 
                        autocorrect="off" 
                        autocapitalize="off" 
                        spellcheck="false"
                        selectable="on" 
-                       class="editable"/>
-                <h2>Password</h2>
-                <input name="password"
-                       type="text"
-                       value="{{html .Password}}"
-                       placeholder="Password"
-                       onchange="Password"
-                       autocomplete="off" 
-                       autocorrect="off" 
-                       autocapitalize="off" 
-                       spellcheck="false"
-                       selectable="on" 
-                       class="editable"/>
+                       class="editable name"/></p>
             </div>
-            <div class="bottom-toolbar">
-                <div>
-                    <button class="button ok" onclick="OkAccountView"/>
-                    <button class="button cancel" onclick="CancelAccountView"/>
-                    <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
-                    <button class="button delete" onclick="DeleteAccountView"/>
-                </div>
-            </div>
-        </div>
+            <input name="username"
+                   type="text"
+                   value="{{html .Username}}"
+                   placeholder="Username"
+                   onchange="Username"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable username"/><br/>
+            <input name="password"
+                   type="text"
+                   value="{{html .Password}}"
+                   placeholder="Password"
+                   onchange="Password"
+                   autocomplete="off" 
+                   autocorrect="off" 
+                   autocapitalize="off" 
+                   spellcheck="false"
+                   selectable="on" 
+                   class="editable password"/>
+          </div>
+          <div class="bottom-toolbar">
+              <div>
+                  <button class="button ok" onclick="AccountAddOk"/>
+                  <button class="button cancel" onclick="AccountCancel"/>
+                  <button class="button rerand" onclick="AccountRandomizePassword"/>
+                  <button class="button delete" onclick="AccountCancel"/>
+              </div>
+          </div>
      </div>
 </div>`
 }
 
 // Show account details
 func GetAccountBody(account string) string {
-
-    fmt.Println("GetAccountBody")
-
+    // Get the path
     imagePath := pass.FullPath + ImagePathSuffix
 
     // Some ugly solution since the fallback on image not found does not work...
-    image := account
-
+    image := account;
     if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
         image = "default"
     }
@@ -297,10 +315,10 @@ func GetAccountBody(account string) string {
           </div>
           <div class="bottom-toolbar">
               <div>
-                  <button class="button ok" onclick="OkAccountView"/>
-                  <button class="button cancel" onclick="CancelAccountView"/>
-                  <button class="button rerand" onclick="RerandomizePasswordAccountView"/>
-                  <button class="button delete" onclick="DeleteAccountView"/>
+                  <button class="button ok" onclick="AccountOk"/>
+                  <button class="button cancel" onclick="AccountCancel"/>
+                  <button class="button rerand" onclick="AccountRandomizePassword"/>
+                  <button class="button delete" onclick="AccountDelete"/>
               </div>
           </div>
      </div>
@@ -308,33 +326,31 @@ func GetAccountBody(account string) string {
 }
 
 // List view
-func GetListBody(searchResults [] string) string {
+func GetListBody(searchResults []Entry) string {
     var accountListFormatted string
     
     imagePath := pass.FullPath + ImagePathSuffix
 
     // Iterate through the search results.
     for _, element := range searchResults {
-        image := element
+        image := element.Name
 
         // Revert to default icon if account icon does not exist.
-        if _, err := os.Stat(imagePath + element + ".png"); os.IsNotExist(err) {
+        if _, err := os.Stat(imagePath + element.Name + ".png"); os.IsNotExist(err) {
             image = "default"
         }
 
         // Format listitem.
-        item := fmt.Sprintf(`<a href="PassView?Account=%s">
+        item := fmt.Sprintf(`<a href="PassView?Account=%s;Encrypted=%s">
                                 <li>
                                     <img src="%s%s.png"/>
                                     <div class="SearchListItemCaption"><span>%s</span></div>
                                 </li>
-                             </a>`, element, imagePath, image, element)
+                             </a>`, element.Name, element.Encrypted, imagePath, image, element.Name)
 
         // Concatenate list.
         accountListFormatted = accountListFormatted + item
     }
-    fmt.Println("GetListBody")
-
 
   // <img src="https://{{$element}}/favicon.ico"/>
     return `

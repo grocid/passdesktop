@@ -41,28 +41,33 @@ import (
     "crypto/tls"
     "github.com/murlokswarm/app"
     _ "github.com/murlokswarm/mac"
+    //"encoding/hex"
 )
 
 var (
     win app.Contexter
     pass Application
 )
-
+ type   Entry struct {
+        Name           string
+        Encrypted      string
+    }
 const (
     ViewSearchDialog = 0
     ViewSearchClearedDialog = 1
     ViewAccountDialog = 2
     ViewConfirmDeleteDialog = 3
     ViewCreateAccountDialog = 4
-    ViewUnlockDialog = 5
-    ViewAboutDialog = 6
+    ViewAddAccountDialog = 5
+    ViewUnlockDialog = 6
+    ViewAboutDialog = 7
 )
 
 const (
-    UseArgon2ForKeyDerivation = false
+    UseArgon2ForKeyDerivation = true
     DefaultGeneratedPasswordLength = 32
-    ConfigFile = "/config/config.json"
-    //ConfigFile = "/../Resources/config/config.json"
+    //ConfigFile = "/config/config.json"
+    ConfigFile = "/../Resources/config/config.json"
 )
 
 func ConfigureTLSClient() {
@@ -104,8 +109,40 @@ func main() {
     } else {
         pass.Config = LoadConfiguration(pass.FullPath + ConfigFile)
         ConfigureTLSClient()
-    }
+    }/*
 
+    testEntry := Entry{}
+    testEntry.Name = "test"
+    testEntry.Encrypted =  "af2aa57fd0c7db88ca07d1df4dbb0ab67b0587ef93ff4e0a205aa3d7979b8fd6"
+
+    q := AccountInfo{}
+    q.Name = "test2"
+    q.Username = "zzz"
+    q.Password = "zzz"
+    //q.Encrypted = "696a0aa509336a1af64aa625d94e7b9d6c82f030895b9971ab549cd84281a14a3d"
+
+    
+
+    pass.DecryptedToken = "5f160193-1f3f-a8a8-b641-b6bd4b168812"
+    salt, _ := hex.DecodeString(pass.Config.Encrypted.Salt)
+    pass.EncryptionKey = DeriveKey([]byte("test83"), salt)
+
+
+
+
+    log.Println(DoPutRequest(q))
+
+    //log.Println(DoDeleteRequest(q))
+
+
+
+    log.Println(DoGetRequest(testEntry))
+    DoListRequest("")
+
+    c,_ := EncryptAndEncode("q", pass.EncryptionKey)
+    log.Println(c)*/
+
+    
     app.OnLaunch = func() {
         // Creates the AppMainMenu component.
         appMenu := &AppMainMenu{}

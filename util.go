@@ -39,7 +39,6 @@ import (
 type Configuration struct {
     Encrypted struct {
         Token string `json:"token"`
-        Nonce string `json:"nonce"`
         Salt  string `json:"salt"`
     } `json:"encrypted"`
     Host string `json:"host"`
@@ -65,8 +64,8 @@ func LoadConfiguration(file string) Configuration {
     return config
 }
 
-func Filter(vs []string, f func(string) bool) []string {
-    vsf := make([]string, 0)
+func Filter(vs []Entry, f func(Entry) bool) []Entry {
+    vsf := make([]Entry, 0)
 
     for _, v := range vs {
         if f(v) {
@@ -75,4 +74,15 @@ func Filter(vs []string, f func(string) bool) []string {
     }
 
     return vsf
+}
+
+func Map(vs []string, f func(string) Entry) []Entry {
+
+    vsm := make([]Entry, len(vs))
+    
+    for i, v := range vs {
+        vsm[i] = f(v)
+    }
+    
+    return vsm
 }

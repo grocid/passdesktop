@@ -58,6 +58,17 @@ type (
 
 const VaultTokenHeader = "X-Vault-Token"
 
+
+func Enc(data string) (string, error) {
+    encData, err := EncryptAndEncode(data, pass.EncryptionKey)
+    return encData, err
+}
+
+func Dec(data string) (string, error) {
+    encData, err := DecodeAndDecrypt(data, pass.EncryptionKey)
+    return encData, err
+}
+
 func DoRequest(operation string, s string) (*http.Response, error) {
     // Create the request based on operation input.
     req, err := http.NewRequest(operation, pass.EntryPoint + s, nil)
@@ -78,11 +89,12 @@ func DoRequest(operation string, s string) (*http.Response, error) {
     return resp, nil
 }
 
-func DoGetRequest(s string) AccountInfo {
+func DoGetRequest(data Entry) AccountInfo {
     // Retrieve data for a specific account.
-    resp, err := DoRequest(http.MethodGet, "/" + s)
+    resp, err := DoRequest(http.MethodGet, "/" + data.Encrypted)
 
     if err != nil {
+        log.Println("1")
         log.Fatal(err)
     }
 
@@ -102,9 +114,10 @@ func DoGetRequest(s string) AccountInfo {
     account := AccountInfo{}
     
     // ...with the proper information...
-    account.Name = s
-    account.Username = r.Data.Username
-    account.Password = r.Data.Password
+    account.Name = data.Name
+    account.Encrypted = data.Encrypted
+    account.Username, err = Dec(r.Data.Username)
+    account.Password, err = Dec(r.Data.Password)
     
     // ...and return to caller.
     return account
@@ -113,22 +126,37 @@ func DoGetRequest(s string) AccountInfo {
 
 func DoPutRequest(data AccountInfo) error {
     // Create payload
+    encUsername, err := Enc(data.Username)
+    encPassword, err := Enc(data.Password)
     payload := &UserData {
-        Username: data.Username,
-        Password: data.Password,
+        Username: encUsername,
+        Password: encPassword,
     }
+    log.Println(data)
+
 
     // Encode data as JSON.
     jsonPayload, err := json.Marshal(payload)
     encodedPayload := bytes.NewBuffer(jsonPayload)
 
+    if data.Encrypted == "" {
+        data.Encrypted, err = Enc(data.Name)
+    }
+
+    if err != nil {
+        log.Println("1")
+        return err
+    }
+    log.Println(data)
+
     // Create the actual request.
     req, err := http.NewRequest(http.MethodPut, 
-                                pass.EntryPoint + "/" + data.Name, 
+                                pass.EntryPoint + "/" + data.Encrypted,
                                 encodedPayload)
     req.Header.Add(VaultTokenHeader, pass.DecryptedToken)
 
     if err != nil {
+        log.Println("1")
         return err
     }
 
@@ -136,6 +164,7 @@ func DoPutRequest(data AccountInfo) error {
     _, err = pass.Client.Do(req)
 
     if err != nil {
+        log.Println("1")
         return err
     }
 
@@ -143,12 +172,16 @@ func DoPutRequest(data AccountInfo) error {
 }
 
 func DoDeleteRequest(data AccountInfo) error {
-    _, err := DoRequest(http.MethodDelete, "/" + data.Name)
+    if data.Encrypted == "" {
+        log.Fatal("No encrypted data stored")
+    }
+
+    _, err := DoRequest(http.MethodDelete, "/" + data.Encrypted)
 
     return err
 }
 
-func DoListRequest(s string) []string {
+func DoListRequest(s string) []Entry {
     // Do a LIST to get all entries.
     resp, err := DoRequest("LIST", "")
 
@@ -168,20 +201,34 @@ func DoListRequest(s string) []string {
     r := VaultResponseList{}
     json.Unmarshal([]byte(body), &r)
 
-    // Create a variable with the accounts.
-    var accounts [] string
+    // Create a variable with the accounts, this time
+    // decrypted so we can filter them based on our
+    // search query.
+    accounts := Map(r.Data.Keys, func(v string) Entry {
+                        decrypted, err := Dec(v)
+                        if err != nil {
+                            log.Println(v, err)
+                            return Entry{}
+                        }
+                        return Entry{decrypted, v}
+                    })
+
+    // Filter out erronous entries, which may have failed
+    // due to format or message-authentication error.
+    accounts = Filter(accounts, func(v Entry) bool {
+        return v.Name != ""
+
+    })
 
     // Filtering of data.
     if s != "" {
         // Filter the entries.
-        accounts = Filter(r.Data.Keys, func(v string) bool {
-            return strings.Contains(v, s)
+        accounts = Filter(accounts, func(v Entry) bool {
+            return strings.Contains(v.Name, s)
+
         })
-    } else {
-        // If filter was empty, we treat it as wildcard.
-        accounts = r.Data.Keys
     }
-    
+
     // Return to UI.
     return accounts
 }

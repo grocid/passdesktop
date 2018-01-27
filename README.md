@@ -2,18 +2,33 @@
 
 # Pass Desktop for macOS
 
-Pass is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Vault](https://www.vaultproject.io), where all accounts with associated usernames and passwords are stored.
+Pass Desktop is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Hashicorp Vault](https://www.vaultproject.io) (from now on called just Vault), where all accounts with associated usernames and passwords are stored.
 
-Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with AES-GCM-256. The encryption key is derived as 
+Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with ChaCha20-Poly1305. The encryption key is derived as 
 ```
-key := PBKDF2(password, salt)
+key := Argon(password, salt)
 ```
 and 
 ```
-token := AES-GCM-Decrypt(encrypted token, key, nonce).
+token := ChaCha20-Poly1305-Decrypt(encrypted token, key, nonce).
 ```
 
-The decrypted `token` is kept in memory only.
+The decrypted `token` is kept in memory only. Apart from that, it is actually agnostic to the underlying data storage (although, in the case of Vault . Therefore, all entries are encrypted with ChaCha20-Poly1305-Decrypt, under the same key as the token (but of course, different nonces). Inside Vault, the entries have the following format. 
+
+```
+{
+    "username": <encrypted username>,
+    "password": <encrypted password>
+}
+```
+
+The account name is also encrypted, in case you do not want to leak which sites you are registred on. In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
+
+```
+GET /secret/6bb5d1af6cf022c8df559a1b4b0217c92d4e33ffd20abd72865dcccf
+```
+
+Pass perfoms, at every query, real-time decryption of the content. No data is explicitly stored on disk.
 
 ![Decrypting token](doc/decryptingtoken.png)
 
@@ -47,6 +62,8 @@ When an Apple computer goes into hibernation (not regular sleep), in-memory cont
 
 There is the ```pmset somethingVaultKeysomethingsomething``` setting. If you are concerned about this, I suggest you do some own research.
 
+What about Spectre and Meltdown? Pass Desktop is agnostic to these attacks. If the operating system is vulnerable, your memory will leak no matter what.
+
 ## Performance
 
 Pass Desktop keeps no information stored on disk. Search operations are done by performing a LIST (Hashicorp-specific operation), which fetches a JSON with all keys (account names) from the server, after which filtering operations are performed locally. This is done every search query, so with a slow server, the user experience may not be as intended. The same applies for very long lists of accounts. Moreever, Pass Desktop keeps an iconset, where each filename is associated with the account name (favicons are too small). Since there is a mapping betwen account names and the iconset, the recommended convention is to name accounts after the domain. The iconset can be extended by the user with minor effort. The memory usage is about 50 MBs of RAM.
@@ -67,7 +84,6 @@ The configuration `config.json` is a file of the format
 {
 	"encrypted": {
 		"token": "..."
-		"nonce": "..."
 		"salt": "..."
 	},
 	"host": "myserver.com",
@@ -133,6 +149,10 @@ Vault binds to `127.0.0.1`, so we need fw to access it (if you do not want to us
 ```
 
 The more proper way to start Consul, Vault and fw would be to create an init.d or systemd service, but this is fine for testing purposes.
+
+## Icon pack
+
+[Somacro](http://veodesign.com/2011/en/11/08/somacro-27-free-big-and-simple-social-media-icons/)
 
 ## Screenshots
 

@@ -81,7 +81,7 @@ li img {
     float: left;
     list-style-type: none;
     margin: 0 12px 0 0;
-    width: 5vh;
+    width: 6vh;
     /*max-width: 64px;*/
     border-radius: 7px;
 }
@@ -97,6 +97,10 @@ li:hover {
   list-style-type: none;
   background: rgba(255, 255, 255, 0.1);
   cursor: pointer;
+}
+
+::-webkit-input-placeholder { /* Chrome/Opera/Safari */
+  color: #ccc;
 }
 
 @keyframes fadein {
@@ -143,12 +147,12 @@ li:hover {
 
 .editable {
     background-color: rgba(255, 255, 255, 0.1);;
-    color: #f0f0f0; 
+    color: #fafafa; 
     display: block;
     margin : 0 auto;
     width: 80%;
     font-size: 16px;
-    padding: 5pt;
+    padding: 8px;
     border: 0;
     outline: none;
     -webkit-border-radius: 5px;
@@ -194,12 +198,28 @@ li:hover {
     padding-left: 30px;
 }
 
+.editable.name {
+    background: rgba(255, 255, 255, 0);
+    text-align: center;
+    padding-left: 15px;
+    padding-right: 15px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-size: 28px;
+}
+
+.editable.name:focus {
+    color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
 .editable.ca {
     background: rgba(255, 255, 255, 0.1) url(../symbols/port_small.png) no-repeat scroll 10px 10px;
     background-size: 14px;
     padding-left: 30px;
     width: 60%;
 }
+
 
 .Field {
     float: left;
@@ -221,7 +241,7 @@ li:hover {
 .SearchListItemCaption {
     font-size: 16px;
     font-weight: 400;
-    padding-top: -webkit-calc(2vh - 8px);
+    padding-top: -webkit-calc(3vh - 12px);
 }
 
 .PasswordEntryLayout {

@@ -89,7 +89,24 @@ func DeriveKey(password []byte, salt []byte) []byte {
     }
 }
 
-func LockToken(plaintext string, password string) (string, string, string, error) {
+func EncryptAndEncode(plaintext string, key []byte) (string, error) {
+    // Encrypt with AEAD.
+    ciphertext, err := Chacha20Poly1305Encrypt([]byte(plaintext), key)
+
+    return string(hex.EncodeToString(ciphertext)), err
+}
+
+func DecodeAndDecrypt(hexCiphertext string, key []byte) (string, error) {
+    // Decode the provided hex strings
+    ciphertext, _ := hex.DecodeString(hexCiphertext)
+
+    // Use key to decrypt ciphertext
+    token, err := Chacha20Poly1305Decrypt(ciphertext, key)
+
+    return string(token), err
+}
+
+func LockToken(token string, password string) (string, string, error) {
     // Generate random salt.
     salt := make([]byte, SaltLength)
     rand.Read(salt)
@@ -97,41 +114,32 @@ func LockToken(plaintext string, password string) (string, string, string, error
     // Derive key from password + salt.
     key := DeriveKey([]byte(password), salt)
 
-    // Encrypt with AES-GCM-256.
-    ciphertext, nonce, err := EncryptGCM([]byte(plaintext), key)
+    hexToken, err := EncryptAndEncode(token, key)
 
-    // Handle error gracefully.
     if err != nil {
-        return "", "", "", err
+        return "", "", err
     }
 
-    // Encode to hex strings...
-    encodedCipertext := hex.EncodeToString(ciphertext)
-    encodedSalt := hex.EncodeToString(salt)
-    encodedNonce := hex.EncodeToString(nonce)
+    hexSalt := hex.EncodeToString(salt)
 
     // ...and return to caller.
-    return encodedCipertext, encodedNonce, encodedSalt, nil
+    return hexToken, hexSalt, nil
 }
 
-func UnlockToken(ciphertext string, password string, nonce string, salt string) (string, error) {
-    // Decode the provided hex strings
-    decodedSalt, _ := hex.DecodeString(salt)
-    decodedNonce, _ := hex.DecodeString(nonce)
-    decodedCipertext, _ := hex.DecodeString(ciphertext)
+func UnlockToken(hexToken string, password string, hexSalt string) (string, []byte, error) {
+    salt, _ := hex.DecodeString(hexSalt)
 
     // Derive key from password + salt.
-    key := DeriveKey([]byte(password), decodedSalt)
+    key := DeriveKey([]byte(password), salt)
 
-    // Use nonce and key to decrypt ciphertext
-    token, err := DecryptGCM(decodedCipertext, key, decodedNonce)
+    token, err := DecodeAndDecrypt(hexToken, key)
 
     // Take care of errors, i.e., if message authentication failed...
     if err != nil {
-        return "", err
+        return "", []byte{}, err
     }
 
     // ...otherwise, return to UI
-    return string(token), nil
+    return token, key, nil
 }
 
