@@ -94,7 +94,6 @@ func DoGetRequest(data Entry) AccountInfo {
     resp, err := DoRequest(http.MethodGet, "/" + data.Encrypted)
 
     if err != nil {
-        log.Println("1")
         log.Fatal(err)
     }
 
@@ -116,7 +115,7 @@ func DoGetRequest(data Entry) AccountInfo {
     // ...with the proper information...
     account.Name = data.Name
     account.Encrypted = data.Encrypted
-    account.Username, err = Dec(r.Data.Username)
+    account.Username, err = Dec(r.Data.Username) // should handle this
     account.Password, err = Dec(r.Data.Password)
     
     // ...and return to caller.
@@ -132,8 +131,6 @@ func DoPutRequest(data AccountInfo) error {
         Username: encUsername,
         Password: encPassword,
     }
-    log.Println(data)
-
 
     // Encode data as JSON.
     jsonPayload, err := json.Marshal(payload)
@@ -144,10 +141,8 @@ func DoPutRequest(data AccountInfo) error {
     }
 
     if err != nil {
-        log.Println("1")
         return err
     }
-    log.Println(data)
 
     // Create the actual request.
     req, err := http.NewRequest(http.MethodPut, 
@@ -156,7 +151,6 @@ func DoPutRequest(data AccountInfo) error {
     req.Header.Add(VaultTokenHeader, pass.DecryptedToken)
 
     if err != nil {
-        log.Println("1")
         return err
     }
 
@@ -164,7 +158,6 @@ func DoPutRequest(data AccountInfo) error {
     _, err = pass.Client.Do(req)
 
     if err != nil {
-        log.Println("1")
         return err
     }
 

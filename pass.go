@@ -241,7 +241,7 @@ func (h *PassView) AccountAddOk(arg app.ChangeArg) {
     pass.Account.Encrypted = "" // We are creating new entry.
     pass.Account.Username = h.Username
     pass.Account.Password = h.Password
-    log.Println(pass.Account)
+
     if pass.Account.Name != "" {
         AccountUpdate(h)
     } else {
