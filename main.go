@@ -11,7 +11,7 @@ notice, this list of conditions and the following disclaimer.
 copyright notice, this list of conditions and the following disclaimer
 in the documentation and/or other materials provided with the
 distribution.
-   * Neither the name of Google Inc. nor the names of its
+   * Neither the name of Pass Desktop nor the names of its
 contributors may be used to endorse or promote products derived from
 this software without specific prior written permission.
 
@@ -109,39 +109,7 @@ func main() {
     } else {
         pass.Config = LoadConfiguration(pass.FullPath + ConfigFile)
         ConfigureTLSClient()
-    }/*
-
-    testEntry := Entry{}
-    testEntry.Name = "test"
-    testEntry.Encrypted =  "af2aa57fd0c7db88ca07d1df4dbb0ab67b0587ef93ff4e0a205aa3d7979b8fd6"
-
-    q := AccountInfo{}
-    q.Name = "test2"
-    q.Username = "zzz"
-    q.Password = "zzz"
-    //q.Encrypted = "696a0aa509336a1af64aa625d94e7b9d6c82f030895b9971ab549cd84281a14a3d"
-
-    
-
-    pass.DecryptedToken = "5f160193-1f3f-a8a8-b641-b6bd4b168812"
-    salt, _ := hex.DecodeString(pass.Config.Encrypted.Salt)
-    pass.EncryptionKey = DeriveKey([]byte("test83"), salt)
-
-
-
-
-    log.Println(DoPutRequest(q))
-
-    //log.Println(DoDeleteRequest(q))
-
-
-
-    log.Println(DoGetRequest(testEntry))
-    DoListRequest("")
-
-    c,_ := EncryptAndEncode("q", pass.EncryptionKey)
-    log.Println(c)*/
-
+    }
     
     app.OnLaunch = func() {
         // Creates the AppMainMenu component.
