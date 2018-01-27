@@ -6,7 +6,7 @@ Pass Desktop is a GUI for [pass](https://github.com/grocid/pass), but completely
 
 Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with ChaCha20-Poly1305. The encryption key is derived as 
 ```
-key := Argon(password, salt)
+key := Argon2(password, salt, *params)
 ```
 and 
 ```
