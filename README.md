@@ -5,10 +5,12 @@
 Pass Desktop is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Hashicorp Vault](https://www.vaultproject.io) (from now on called just Vault), where all accounts with associated usernames and passwords are stored. Any instance of Vault can be used, no additional setup. So if you are already running Vault, just generate a token and you are ready to go.
 
 Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with ChaCha20-Poly1305. The encryption key is derived as 
+
 ```go
 key := Argon2(password, salt, *params)
 ```
 and 
+
 ```go
 token := ChaCha20-Poly1305-Decrypt(encrypted token, key, nonce).
 ```
@@ -33,6 +35,7 @@ The decrypted `token` is kept in memory only. Apart from that, it is actually ag
 }
 
 ```
+
 The `padding` is a random string which pads the encrypted data to a minimum length. This to make sure no useable information is leaked (e.g. if your password happens to be very short, then it may be reflected in the length of the ciphertext). Large files are identifiable as files, of course, by just looking at the ciphertext. The account name is also encrypted, in case you do not want to leak which sites you are registred on. In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
 
 ```sh
@@ -72,14 +75,20 @@ What about Spectre and Meltdown? Pass Desktop is agnostic to these attacks. If t
 
 ## Performance
 
-Pass Desktop keeps no information stored on disk. Search operations are done by performing a LIST (Hashicorp-specific operation), which fetches a JSON with all keys (account names) from the server, after which decryption and filtering operations are performed locally. This is done every search query, so with a slow server, the user experience may not be as intended. The same applies for very long lists of accounts. Moreever, Pass Desktop keeps an iconset, where each filename is associated with the account name (favicons are too small). Since there is a mapping betwen account names and the iconset, the recommended convention is to name accounts after the domain. The iconset can be extended by the user with minor effort. The memory usage is about 50 MBs of RAM.
+Pass Desktop keeps no information stored on disk. Search operations are done by performing a `LIST` (Hashicorp-specific operation), which fetches a JSON with all keys (account names) from the server, after which decryption and filtering operations are performed locally. 
+
+Every time a `PUT` is made, it will simultaneously update a random value on the path `/secret/updated`. When performing a search, it will check whether `/secret/updated` matches a locally stored value. If not, it will fetch the contents. This, to avoid fetching already known data. This makes the `PUT` twice as expensive in terms of requests made, but as a trade-off, searching large lists will be much less expensive.
+
+Moreever, Pass Desktop keeps an iconset, where each filename is associated with the account name (favicons are too small). Since there is a mapping betwen account names and the iconset, the recommended convention is to name accounts after the domain. The iconset can be extended by the user with minor effort. The memory usage is about 50 MBs of RAM.
 
 ## Building
 
 It is as simple as
+
 ```sh
 go build
 ```
+
 which creates a standalone executable. To build a real .App, I suggest using [macpack](https://github.com/murlokswarm/macpack).
 
 The application will try to load your CA certificate, located as an entry inside `config.json`.
@@ -97,19 +106,25 @@ The configuration `config.json` is a file of the format
     "ca": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 }
 ```
+
 (*Slightly deprecated*) To get the encrypted part, you need to invoke the function `LockToken (plaintext string, password string)` in `crypto.go`:
+
 ```go
 LockToken("your token", "your master password")
 ```
+
 and put these into the JSON.
 
 ## Setting up the backend
 
 To get Pass working, you need to install and configure Vault on the remote server. First, start the storage backend for Vault. This can be SQL, but I would recommend [Consul](https://www.consul.io). Start Consul as follows:
+
 ```sh
 consul agent -server -config-dir=/etc/consul.d/bootstrap/ > /dev/null 2>&1 &
 ```
+
 Let the contents of `/etc/consul.d/bootstrap/config.json` be
+
 ```json
 {
     "bootstrap": true,
@@ -126,11 +141,15 @@ Let the contents of `/etc/consul.d/bootstrap/config.json` be
     "enable_syslog": false
 }
 ```
+
 Then, Vault can be started in the following way.
+
 ```sh
 vault server -config=/etc/vault.d/config.json > /dev/null 2>&1 &
 ```
+
 where `/etc/vault.d/config.json` contains
+
 ```json
 {
     "storage": {
@@ -150,7 +169,9 @@ where `/etc/vault.d/config.json` contains
     }
 }
 ```
+
 Vault binds to `127.0.0.1`, so we need fw to access it (if you do not want to use fw, then bind the listener to `0.0.0.0:8001`). We can start it as
+
 ```sh
 ./fw 0.0.0.0:8001 127.0.0.1:8200 2>&1 &
 ```

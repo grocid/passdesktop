@@ -38,6 +38,10 @@ import (
     "strconv"
 )
 
+// To remember the query we did before we entered an account.
+// When pressing back, we want to return to that query.
+var previousQuery string
+
 func (h *PassView) Render() string {
 
     // If no config file is present...
@@ -61,16 +65,15 @@ func (h *PassView) Render() string {
         // Clear all account data from UI
         AccountClearInformation(h)
 
-        if len(pass.SearchResult) > 0 {
+        filteredList := VaultListSecrets(h.Query)
+        if len(filteredList) > 0 {
             // Show results from search.
-            return GetListBody(pass.SearchResult)
+            return GetListBody(filteredList)
         } else {
             // Whenever no match is found, show
             // search glass and a button to add
-            // that particular account. .
-
+            // that particular account.
             return GetEmptySearchDialog()
-
         }
 
     // Show the full list, with not queries filtered.
@@ -143,56 +146,6 @@ func (h *PassView) Render() string {
     }
 }
 
-func (h *PassView) Unlock(arg app.ChangeArg) {
-    // Get the password.
-    password := arg.Value
-
-    // Try to unlock the token with the password
-    token, key, err := UnlockToken(pass.Config.Encrypted.Token,
-        password,
-        pass.Config.Encrypted.Salt)
-
-    // If we succed with message authentication, i.e.,
-    // if password is correct...
-    if err == nil {
-        // Progress to unlocked display
-        pass.Locked = false
-
-        log.Println("Unlocked")
-
-        // Set token
-        pass.DecryptedToken = token
-        pass.EncryptionKey = key
-
-        // Init the unlocked display with all entries
-        pass.SearchResult = DoListRequest("")
-
-        // Preset the search dialog
-        pass.CurrentView = ViewSecureFileDialog
-    } else {
-        log.Println(err)
-    }
-
-    // Show if unlocking was successful
-    app.Render(h)
-}
-
-func (h *PassView) Search(arg app.ChangeArg) {
-    // Stay in search view...
-    pass.CurrentView = ViewSearchDialog
-
-    // ...and fetch accounts based on query
-    pass.SearchResult = DoListRequest(arg.Value)
-
-    // We need to keep track of the query, since if result is empty
-    // and we want to create account, this is where information is
-    // fetched from.
-    h.Query = arg.Value
-
-    // Tells the app to update the rendering of the component.
-    app.Render(h)
-}
-
 func (h *PassView) OnHref(URL *url.URL) {
     // Extract information from query and get account name and
     // its encrypted counterpart from query (this is need since
@@ -204,15 +157,32 @@ func (h *PassView) OnHref(URL *url.URL) {
 
     // Go to account view and fetch information from server
     pass.CurrentView = ViewAccountDialog
-    pass.Account = DoGetRequest(Entry{h.Query, encryptedName})
+    pass.Account = VaultReadSecret(Entry{h.Query, encryptedName})
+
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
+func (h *PassView) Search(arg app.ChangeArg) {
+    // Stay in search view...
+    pass.CurrentView = ViewSearchDialog
+
+    // ...and fetch accounts based on query.
+    //VaultListSecrets("")
+
+    // We need to keep track of the query, since if result is empty
+    // and we want to create account, this is where information is
+    // fetched from.
+    h.Query = arg.Value
+    previousQuery = h.Query
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
 func (h *PassView) AccountCreate(arg app.ChangeArg) {
-    // Initialize the query as name and
-    // with empty crendentials
+    // Initialize the query as name and with empty crendentials.
+    log.Println("AccountCreate")
     h.Account = h.Query
     pass.Account.Name = h.Query
     pass.Account.Username = ""
@@ -241,25 +211,29 @@ func (h *PassView) AccountAddOk(arg app.ChangeArg) {
     } else {
         log.Println("Empty name!")
     }
+
+    app.Render(h)
 }
 
 func (h *PassView) AccountOk(arg app.ChangeArg) {
+    h.Query = previousQuery
     AccountUpdate(h)
+
 }
 
 func (h *PassView) AccountTrashOk(arg app.ChangeArg) {
     // Send delete request to REST.
-    DoDeleteRequest(pass.Account)
+    VaultDeleteSecret(pass.Account)
 
     // Since we deleted the account, we remove its name
     // from the search bar.
-    h.Query = ""
+    h.Query = previousQuery
 
     // Go back from account view to search view.
     pass.CurrentView = ViewSearchDialog
 
     // Get full list.
-    pass.SearchResult = DoListRequest("")
+    VaultListSecrets(previousQuery)
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
@@ -278,26 +252,24 @@ func (h *PassView) AccountCancel(arg app.ChangeArg) {
     pass.CurrentView = ViewSearchDialog
 
     // Get full list.
-    pass.SearchResult = DoListRequest("")
+    h.Query = previousQuery
+    VaultListSecrets(previousQuery)
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
 }
 
 func (h *PassView) AccountRandomizePassword(arg app.ChangeArg) {
+
     // Generate a new password.
     pass.Account.Password, _ = Entropy(DefaultGeneratedPasswordLength)
-
-    // Update name and username from UI.
-    pass.Account.Name = h.Account
-    pass.Account.Username = h.Username
 
     // Update UI with new password
     h.Password = pass.Account.Password
 
-    // Stay in the add account dialog, but do not
-    // wipe anything
-    pass.CurrentView = ViewStayAddAccountDialog
+    // Update name and username from UI.
+    pass.Account.Name = h.Account
+    pass.Account.Username = h.Username
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
@@ -324,16 +296,49 @@ func AccountUpdate(h *PassView) {
     // from UI.
     pass.Account.Username = h.Username
     pass.Account.Password = h.Password
-    // Account.Username must remain unchanged or we will
-    // create a new entry
 
     // Update it on server.
-    DoPutRequest(pass.Account)
+    VaultWriteSecret(pass.Account)
 
     // Go back from account view to search view and fetch all accounts
     pass.CurrentView = ViewSearchDialog
-    pass.SearchResult = DoListRequest("")
 
+    VaultListSecrets("")
+
+    app.Render(h)
+}
+
+func (h *PassView) Unlock(arg app.ChangeArg) {
+    // Get the password.
+    password := arg.Value
+
+    // Try to unlock the token with the password
+    token, key, err := UnlockToken(pass.Config.Encrypted.Token,
+        password,
+        pass.Config.Encrypted.Salt)
+
+    // If we succed with message authentication, i.e.,
+    // if password is correct...
+    if err == nil {
+        // Progress to unlocked display
+        pass.Locked = false
+
+        log.Println("Unlocked")
+
+        // Set token
+        pass.DecryptedToken = token
+        pass.EncryptionKey = key
+
+        // Init the unlocked display with all entries
+        VaultListSecrets("")
+
+        // Preset the search dialog
+        pass.CurrentView = ViewSecureFileDialog
+    } else {
+        log.Println(err)
+    }
+
+    // Show if unlocking was successful
     app.Render(h)
 }
 

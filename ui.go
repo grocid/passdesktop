@@ -273,6 +273,7 @@ func GetAccountBody(account string) string {
                value="{{html .Query}}"
                placeholder="Account"
                onchange="Search"
+               autofocus="true"
                autocomplete="off" 
                autocorrect="off" 
                autocapitalize="off" 

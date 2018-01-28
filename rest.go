@@ -47,23 +47,27 @@ type (
         Padding  string `json:"padding"`
     }
 
-    VaultStruct struct {
-        Data VaultStructEnc `json:"data"`
+    MyRequestTag struct {
+        Tag string `json:"tag"`
     }
 
-    VaultStructEnc struct {
+    MyRequestEncrypted struct {
         Encrypted []byte `json:"encrypted"`
     }
 
-    VaultResponseList struct {
+    MyResponse struct {
         Data struct {
-            Keys []string `json:"keys"`
+            Tag       string   `json:"tag"`
+            Encrypted []byte   `json:"encrypted"`
+            Keys      []string `json:"keys"`
         } `json:"data"`
+        Errors []string `json:"errors"`
     }
 )
 
 const (
     VaultTokenHeader  = "X-Vault-Token"
+    TagPath           = "/updated"
     MinimumDataLength = 3 * 32
 )
 
@@ -87,12 +91,71 @@ func DecBase64(data []byte) (string, error) {
     return encData, err
 }
 
-func DoRequest(operation string, s string) (*http.Response, error) {
-    // Create the request based on operation input.
-    req, err := http.NewRequest(operation, pass.EntryPoint+s, nil)
+func UpdateTag() error {
+    // Let the client know that we did an tag update and therefore
+    // do not need to check it.
+    pass.LocalUpdate = true
+
+    // Update the tag to indicate (for other clients) that something
+    // has changed, i.e., we have done a PUT or a DELETE. To do so,
+    // we generate random string, which w.h.p does not collide with
+    // the existing one.
+    tag, err := Entropy(32)
+    storedTag := MyRequestTag{
+        Tag: tag,
+    }
+
+    // Convert to the payload to JSON.
+    jsonStoredTag, err := json.Marshal(storedTag)
+
+    // Put the new tag in place by doing a PUT on the tag path.
+    _, err = Request(http.MethodPut, TagPath,
+        bytes.NewBuffer([]byte(jsonStoredTag)))
+
+    return err
+}
+
+func IsTagUpdated() bool {
+    // If we did a PUT or DELETE from this client, we already know
+    // it must be updated.
+    if pass.LocalUpdate {
+        return true
+    }
+
+    // Obtain the value of the tag.
+    vaultResponse, err := Request(http.MethodGet, TagPath, nil)
 
     if err != nil {
-        return nil, err
+        return false
+    }
+
+    // Check whether old tag and obtained tag match or not.
+    tagUpdated := pass.CachedTag != vaultResponse.Data.Tag
+
+    // Next time we call it, it will not differ if there was no
+    // additional change between the calls.
+    pass.CachedTag = vaultResponse.Data.Tag
+
+    return tagUpdated
+}
+
+func Request(operation string, s string, data *bytes.Buffer) (MyResponse, error) {
+    var err error
+    var req *http.Request
+
+    log.Println(operation, pass.EntryPoint+s)
+
+    // These two cases need to be handled separarely, i.e., the buffer must
+    // explicitly be set to nil, we cannot pass a pointer with nil, or
+    // program will throw a SIGSEGV.
+    if data != nil {
+        req, err = http.NewRequest(operation, pass.EntryPoint+s, data)
+    } else {
+        req, err = http.NewRequest(operation, pass.EntryPoint+s, nil)
+    }
+
+    if err != nil {
+        return MyResponse{}, err
     }
 
     // Add header and do a GET for the specified entry...
@@ -101,38 +164,33 @@ func DoRequest(operation string, s string) (*http.Response, error) {
 
     // This should not happen, unless entry was deleted in the meantime...
     if err != nil {
-        return nil, err
-    }
-
-    return resp, nil
-}
-
-func DoGetRequest(data Entry) AccountInfo {
-    // Retrieve data for a specific account.
-    resp, err := DoRequest(http.MethodGet, "/"+data.Encrypted)
-
-    if err != nil {
-        log.Fatal(err)
+        return MyResponse{}, err
     }
 
     // Read the body...
     defer resp.Body.Close()
     body, err := ioutil.ReadAll(resp.Body)
 
+    response := MyResponse{}
+    json.Unmarshal([]byte(body), &response)
+
+    return response, nil
+}
+
+func VaultReadSecret(data Entry) AccountInfo {
+    // Retrieve data for a specific account.
+    vaultResponse, err := Request(http.MethodGet, "/"+data.Encrypted, nil)
+
     if err != nil {
         log.Fatal(err)
     }
 
-    // ...and parse the JSON
-    r := VaultStruct{}
-    json.Unmarshal([]byte(body), &r)
-
     // Decrypt
-    decryptedPayload, err := DecBase64(r.Data.Encrypted)
+    decryptedData, err := DecBase64(vaultResponse.Data.Encrypted)
 
     // ...generate a AccountInfo struct...
     account := AccountInfo{}
-    json.Unmarshal([]byte(decryptedPayload), &account)
+    json.Unmarshal([]byte(decryptedData), &account)
 
     // ...with the proper information...
     account.Name = data.Name
@@ -142,26 +200,31 @@ func DoGetRequest(data Entry) AccountInfo {
     return account
 }
 
-func DoPutRequest(data AccountInfo) error {
+func VaultWriteSecret(data AccountInfo) error {
+    var padding string
+
+    log.Println("WRITE", data)
+
     // Get some padding data, so that, ciphertext length
     // does not reveal information about password lenth.
     contentLength := len(data.Username) + len(data.Username) + len(data.File)
 
-    padding := ""
     if contentLength < MinimumDataLength {
         padding, _ = Entropy(MinimumDataLength - contentLength)
     }
 
-    payload := &UserData{
+    userData := &UserData{
         Username: data.Username,
         Password: data.Password,
         File:     data.File,
         Padding:  padding,
     }
 
-    // Encode data as JSON.
-    jsonPayload, err := json.Marshal(payload)
-    encryptedPayload, err := EncBase64(string(jsonPayload))
+    // Encode data as JSON...
+    jsonUserData, err := json.Marshal(userData)
+
+    // ...and encrypt.
+    encryptedUserData, err := EncBase64(string(jsonUserData))
 
     if data.Encrypted == "" {
         data.Encrypted, err = EncHex(data.Name)
@@ -171,90 +234,84 @@ func DoPutRequest(data AccountInfo) error {
         return err
     }
 
-    vs := VaultStructEnc{
-        Encrypted: encryptedPayload,
+    vaultRequestEncrypted := MyRequestEncrypted{
+        Encrypted: encryptedUserData,
     }
-
-    jsonPayload, err = json.Marshal(vs)
+    jsonVaultRequestEncrypted, err := json.Marshal(vaultRequestEncrypted)
 
     // Create the actual request.
-    req, err := http.NewRequest(http.MethodPut,
-        pass.EntryPoint+"/"+data.Encrypted,
-        bytes.NewBuffer(jsonPayload))
-    req.Header.Add(VaultTokenHeader, pass.DecryptedToken)
+    _, err = Request(http.MethodPut, "/"+data.Encrypted,
+        bytes.NewBuffer(jsonVaultRequestEncrypted))
 
     if err != nil {
         return err
     }
 
-    // Do a PUT with the associated data.
-    _, err = pass.Client.Do(req)
+    log.Println("OK")
 
-    if err != nil {
-        return err
-    }
-
-    return nil
+    return UpdateTag()
 }
 
-func DoDeleteRequest(data AccountInfo) error {
+func VaultDeleteSecret(data AccountInfo) error {
     if data.Encrypted == "" {
         log.Fatal("No encrypted data stored")
     }
 
-    _, err := DoRequest(http.MethodDelete, "/"+data.Encrypted)
+    _, err := Request(http.MethodDelete, "/"+data.Encrypted, nil)
 
-    return err
+    if err != nil {
+        return err
+    }
+
+    if err != nil {
+        return err
+    }
+
+    return UpdateTag()
 }
 
-func DoListRequest(s string) []Entry {
-    // Do a LIST to get all entries.
-    resp, err := DoRequest("LIST", "")
+func VaultListSecrets(matchingString string) []Entry {
+    if IsTagUpdated() {
+        // Do a LIST to get all entries.
+        vaultResponse, err := Request("LIST", "", nil)
 
-    // If it fails, use local copy
-    if err != nil {
-        log.Println(err)
-    }
-
-    // Read in the data...
-    defer resp.Body.Close()
-    body, err := ioutil.ReadAll(resp.Body)
-
-    if err != nil {
-        log.Println(err)
-    }
-
-    // ...and parse JSON.
-    r := VaultResponseList{}
-    json.Unmarshal([]byte(body), &r)
-
-    // Create a variable with the accounts, this time
-    // decrypted so we can filter them based on our
-    // search query.
-    accounts := Map(r.Data.Keys, func(v string) Entry {
-        decrypted, err := DecHex(v)
         if err != nil {
-            return Entry{}
+            return []Entry{}
         }
-        return Entry{decrypted, v}
-    })
 
-    // Filter out erronous entries, which may have failed
-    // due to format or message-authentication error.
-    accounts = Filter(accounts, func(v Entry) bool {
-        return v.Name != ""
+        pass.SearchResult = Map(vaultResponse.Data.Keys,
+            func(v string) Entry {
+                decrypted, err := DecHex(v)
+                if err != nil {
+                    return Entry{}
+                }
+                return Entry{decrypted, v}
+            })
 
-    })
+        // Filter out erronous entries, which may have failed
+        // due to format or message-authentication error.
+        pass.SearchResult = Filter(pass.SearchResult,
+            func(v Entry) bool {
+                return v.Name != ""
+                //return v != Entry{}
+            })
+        // sort it!
 
-    // Filtering of data.
-    if s != "" {
-        // Filter the entries.
-        accounts = Filter(accounts, func(v Entry) bool {
-            return strings.Contains(v.Name, s)
-
-        })
+    } else {
+        log.Println("Not tag change: using cached results")
     }
 
-    // Return to UI.
-    return accounts
+    // If the empty matchingString should match all results, while
+    // the non-empty must be substring of the results.
+    if matchingString != "" {
+        // Filter the entries.
+        filteredSearchResult := Filter(pass.SearchResult,
+            func(v Entry) bool {
+                return strings.Contains(v.Name, matchingString)
+            })
+        return filteredSearchResult
+    } else {
+        // Return non-filtered result.
+        return pass.SearchResult
+    }
 }

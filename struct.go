@@ -48,6 +48,8 @@ type (
         Account      AccountInfo
         CurrentView  int
         SearchResult []Entry
+        CachedTag    string
+        LocalUpdate  bool
         EntryPoint   string
         FullPath     string
     }

@@ -66,8 +66,8 @@ const (
     UseArgon2ForKeyDerivation      = true
     DefaultGeneratedPasswordLength = 32
     MinimumPasswordLength          = 8
-    //ConfigFile = "/config/config.json"
-    ConfigFile = "/../Resources/config/config.json"
+    ConfigFile                     = "/../Resources/config/config.json"
+    //ConfigFile                     = "/config/config.json"
 )
 
 func ConfigureTLSClient() {
@@ -99,6 +99,9 @@ func SetApplicationPath() {
 func main() {
     // Pass is locked by default.
     pass.Locked = true
+
+    // Make sure we update the list the first time.
+    pass.LocalUpdate = true
 
     // Get current directory to read config and icons.
     SetApplicationPath()
