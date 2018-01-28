@@ -1,3 +1,7 @@
+* {
+    font-family: "Helvetica Neue"
+}
+
 body {
     background-size: cover;
     background-position: center;
@@ -313,11 +317,15 @@ li:hover {
     background-image:url(../buttons/add.png);
 }
 
+.button.download{
+    background-image:url(../buttons/download.png);
+}
+
 .symbol {
     max-width: 100px;
     max-height: 100px;
     margin: auto;
-    padding-top: 50%;
+    margin-top: -webkit-calc(20vh + 30px);
 }
 
 .symbol.trash {

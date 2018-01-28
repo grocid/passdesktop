@@ -31,47 +31,50 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
-    "os"
-    "log"
-    "fmt"
-    "time"
-    "path/filepath"
-    "net/http"
-    "crypto/x509"
     "crypto/tls"
+    "crypto/x509"
+    "fmt"
     "github.com/murlokswarm/app"
     _ "github.com/murlokswarm/mac"
+    "log"
+    "net/http"
+    "os"
+    "path/filepath"
+    "time"
     //"encoding/hex"
 )
 
 var (
-    win app.Contexter
+    win  app.Contexter
     pass Application
 )
 
 const (
-    ViewSearchDialog = 0
-    ViewSearchClearedDialog = 1
-    ViewAccountDialog = 2
-    ViewConfirmDeleteDialog = 3
-    ViewCreateAccountDialog = 4
-    ViewAddAccountDialog = 5
-    ViewUnlockDialog = 6
-    ViewAboutDialog = 7
+    ViewSearchDialog           = 0
+    ViewSearchClearedDialog    = 1
+    ViewAccountDialog          = 2
+    ViewConfirmDeleteDialog    = 3
+    ViewPresetAddAccountDialog = 4
+    ViewStayAddAccountDialog   = 5
+    ViewAddAccountDialog       = 6
+    ViewSecureFileDialog       = 7
+    ViewUnlockDialog           = 8
+    ViewAboutDialog            = 9
 )
 
 const (
-    UseArgon2ForKeyDerivation = true
+    UseArgon2ForKeyDerivation      = true
     DefaultGeneratedPasswordLength = 32
+    MinimumPasswordLength          = 8
     //ConfigFile = "/config/config.json"
     ConfigFile = "/../Resources/config/config.json"
 )
 
 func ConfigureTLSClient() {
     // Setup entrypoint
-    pass.EntryPoint = fmt.Sprintf("https://%s:%s/v1/secret", 
-                                  pass.Config.Host, 
-                                  pass.Config.Port)
+    pass.EntryPoint = fmt.Sprintf("https://%s:%s/v1/secret",
+        pass.Config.Host,
+        pass.Config.Port)
 
     // Create a TLS context...
     caCertPool := x509.NewCertPool()
@@ -81,7 +84,7 @@ func ConfigureTLSClient() {
     pass.Client = &http.Client{
         Transport: &http.Transport{
             TLSClientConfig: &tls.Config{
-                RootCAs:      caCertPool,
+                RootCAs: caCertPool,
             },
         },
         Timeout: time.Second * 10,
@@ -107,7 +110,7 @@ func main() {
         pass.Config = LoadConfiguration(pass.FullPath + ConfigFile)
         ConfigureTLSClient()
     }
-    
+
     app.OnLaunch = func() {
         // Creates the AppMainMenu component.
         appMenu := &AppMainMenu{}
@@ -146,10 +149,10 @@ func newMainWindow() app.Contexter {
 
     // Create component...
     ps := &PassView{}
-   
+
     // ...and mount to window
-    win.Mount(ps)  
-    
+    win.Mount(ps)
+
     // Return to context
     return win
 }

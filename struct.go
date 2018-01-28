@@ -30,59 +30,46 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 package main
 
-import (
-    "encoding/json"
-    "log"
-    "os"
+import "net/http"
+
+type (
+    Entry struct {
+        Name      string
+        Encrypted string
+    }
+
+    Application struct {
+        Client         *http.Client
+        Config         Configuration
+        DecryptedToken string
+        EncryptionKey  []byte
+        Locked         bool
+
+        Account      AccountInfo
+        CurrentView  int
+        SearchResult []Entry
+        EntryPoint   string
+        FullPath     string
+    }
+
+    PassView struct {
+        Query         string
+        Account       string
+        Token         string
+        Username      string
+        Password      string
+        PasswordAgain string
+        Hostname      string
+        Port          string
+        Filename      string
+    }
+
+    AccountInfo struct {
+        Name      string
+        Username  string
+        Password  string
+        Encrypted string
+
+        File []byte
+    }
 )
-
-type Configuration struct {
-    Encrypted struct {
-        Token string `json:"token"`
-        Salt  string `json:"salt"`
-    } `json:"encrypted"`
-    Host string `json:"host"`
-    Port string `json:"port"`
-    CA   string `json:"ca"`
-}
-
-func LoadConfiguration(file string) Configuration {
-    var config Configuration
-
-    // Try to open configuration file.
-    configFile, err := os.Open(file)
-    defer configFile.Close()
-
-    // Bail out if there was an error reading it.
-    if err != nil {
-        log.Fatal(err.Error())
-    }
-
-    // Decode the config.
-    jsonParser := json.NewDecoder(configFile)
-    jsonParser.Decode(&config)
-    return config
-}
-
-func Filter(vs []Entry, f func(Entry) bool) []Entry {
-    vsf := make([]Entry, 0)
-
-    for _, v := range vs {
-        if f(v) {
-            vsf = append(vsf, v)
-        }
-    }
-
-    return vsf
-}
-
-func Map(vs []string, f func(string) Entry) []Entry {
-
-    vsm := make([]Entry, len(vs))
-
-    for i, v := range vs {
-        vsm[i] = f(v)
-    }
-
-    return vsm
-}

@@ -31,11 +31,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
-    "os"
     "fmt"
+    "os"
 )
 
-// TODO: fix this to relative path
 const ImagePathSuffix = "/../Resources/iconpack/"
 
 func GetCreateConfigDialog() string {
@@ -179,13 +178,12 @@ func GetEmptySearchDialog() string {
 </div>`
 }
 
-
 func GetAddDialog(account string) string {
     // Get the path
     imagePath := pass.FullPath + ImagePathSuffix
 
     // Some ugly solution since the fallback on image not found does not work...
-    image := account;
+    image := account
     if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
         image = "default"
     }
@@ -207,7 +205,7 @@ func GetAddDialog(account string) string {
             <div style="text-align: center; 
                         margin-left: auto; 
                         margin-right: auto;
-                        padding-top: 30px">
+                        margin-top: -webkit-calc(20vh - 20px);">
                  <img src="` + imagePath + image + `.png" 
                       style="max-width: 128px; "/>
                  <p><input name="Name"
@@ -263,7 +261,7 @@ func GetAccountBody(account string) string {
     imagePath := pass.FullPath + ImagePathSuffix
 
     // Some ugly solution since the fallback on image not found does not work...
-    image := account;
+    image := account
     if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
         image = "default"
     }
@@ -285,7 +283,7 @@ func GetAccountBody(account string) string {
             <div style="text-align: center; 
                         margin-left: auto; 
                         margin-right: auto;
-                        padding-top: 30px">
+                        margin-top: -webkit-calc(20vh - 20px);">
                  <img src="` + imagePath + image + `.png" 
                       style="max-width: 128px; "/>
                  <h1>{{.Account}}</h1>
@@ -328,7 +326,7 @@ func GetAccountBody(account string) string {
 // List view
 func GetListBody(searchResults []Entry) string {
     var accountListFormatted string
-    
+
     imagePath := pass.FullPath + ImagePathSuffix
 
     // Iterate through the search results.
@@ -352,7 +350,7 @@ func GetListBody(searchResults []Entry) string {
         accountListFormatted = accountListFormatted + item
     }
 
-  // <img src="https://{{$element}}/favicon.ico"/>
+    // <img src="https://{{$element}}/favicon.ico"/>
     return `
 <div class="WindowLayout">    
     <div class="SearchLayout">
@@ -375,6 +373,42 @@ func GetListBody(searchResults []Entry) string {
             </div>
         </div>
     </div>
+</div>`
+}
+
+func GetSecureFileDialog() string {
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value=""
+               placeholder="Account"
+               onchange="Search"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+        <div class="animated">
+            <div style="text-align: center; 
+                        margin-left: auto; 
+                        margin-right: auto;
+                        margin-top: -webkit-calc(20vh - 20px);">
+                 <img src="` + pass.FullPath + ImagePathSuffix + `ssh_key.png" 
+                      style="max-width: 128px; "/>
+                 <h1>Min SSH-nyckel</h1>
+            </div>
+          <h2>Files are limited to 512 kb</h2>
+          </div>
+          <div class="bottom-toolbar">
+              <div>
+                  <button class="button ok" onclick=""/>
+                  <button class="button add" onclick=""/>
+                  <button class="button download" onclick=""/>
+              </div>
+          </div>
+     </div>
 </div>`
 }
 

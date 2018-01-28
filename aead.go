@@ -32,11 +32,11 @@ package main
 
 import (
     "io"
-    "crypto/aes"
-    "crypto/cipher"
+    //"crypto/aes"
+    //"crypto/cipher"
     "crypto/rand"
-     "golang.org/x/crypto/chacha20poly1305"
-  )
+    "golang.org/x/crypto/chacha20poly1305"
+)
 
 func Chacha20Poly1305Encrypt(plaintext []byte, key []byte) ([]byte, error) {
     // Create a key data structure
@@ -75,6 +75,8 @@ func Chacha20Poly1305Decrypt(ciphertext []byte, key []byte) ([]byte, error) {
     return plaintext, nil
 }
 
+/*   These are not used, but kept if anyone wants to do so.
+
 func EncryptGCM(plaintext []byte, key []byte) ([]byte, []byte, error) {
     // Create a key data structure
     block, err := aes.NewCipher(key)
@@ -103,7 +105,7 @@ func EncryptGCM(plaintext []byte, key []byte) ([]byte, []byte, error) {
     return aesgcm.Seal(nil, nonce, plaintext, nil), nonce, nil
 
 }
-  
+
 func DecryptGCM(ciphertext []byte, key []byte, nonce []byte) ([]byte, error) {
     // Create a key data structure
     block, err := aes.NewCipher(key)
@@ -129,3 +131,4 @@ func DecryptGCM(ciphertext []byte, key []byte, nonce []byte) ([]byte, error) {
     // ...otherwise return dat shit to caller
     return plaintext, nil
 }
+*/

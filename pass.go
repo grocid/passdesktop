@@ -31,56 +31,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
-    "log"
-    "net/http"
-    "strconv"
-    "path/filepath"
-    "net/url"
     "github.com/murlokswarm/app"
-)
-
-type (
-    Entry struct {
-        Name           string
-        Encrypted      string
-    }
-
-    Application struct {
-        Client         *http.Client
-        Config         Configuration
-        DecryptedToken string
-        EncryptionKey  []byte
-        Locked         bool
-
-        Account        AccountInfo
-        CurrentView    int
-        SearchResult   []Entry // Encrypted part
-        EntryPoint     string
-        FullPath       string
-    }
-
-    PassView struct {
-        Query          string 
-        Account        string
-        Token          string
-        Username       string
-        Password       string
-        PasswordAgain  string
-        Hostname       string
-        Port           string
-        Filename       string
-    }
-
-    AccountInfo struct {
-        Name           string
-        Username       string
-        Password       string
-        Encrypted      string
-    }
+    "log"
+    "net/url"
+    "path/filepath"
+    "strconv"
 )
 
 func (h *PassView) Render() string {
-
 
     // If no config file is present...
     if pass.Config == (Configuration{}) {
@@ -93,71 +51,95 @@ func (h *PassView) Render() string {
         return GetPasswordInput()
     }
 
-    // Clear all account data from UI
-    AccountClearInformation(h)
-
-    // This is a MUX for views.
+    // This is a MUX for views
     // Get the view from CurrentView and display
     // accordingly.
     switch pass.CurrentView {
 
-        // Show search dialog.
-        case ViewSearchDialog:
-            if len(pass.SearchResult) > 0 {
-                // Show results from search.
-                return GetListBody(pass.SearchResult)
-            } else {
-                // Whenever no match is found, show
-                // search glass and a button to add
-                // that particular account. .
+    // Show search dialog.
+    case ViewSearchDialog:
+        // Clear all account data from UI
+        AccountClearInformation(h)
 
-                return GetEmptySearchDialog()
-
-            }
-
-        // Show the full list, with not queries filtered.
-        case ViewSearchClearedDialog:
-            h.Query = ""
+        if len(pass.SearchResult) > 0 {
+            // Show results from search.
             return GetListBody(pass.SearchResult)
+        } else {
+            // Whenever no match is found, show
+            // search glass and a button to add
+            // that particular account. .
 
-        // When a list item is clicked, bring up account view.
-        case ViewAccountDialog:
-            // Pass information from internal struct
-            // to the UI components.
-            h.Account = pass.Account.Name
-            h.Username = pass.Account.Username
-            h.Password = pass.Account.Password
+            return GetEmptySearchDialog()
 
-            return GetAccountBody(pass.Account.Name)
+        }
 
-        // When an the add item is clicked during an empty 
-        // search result, (we are now in GetEmptySearchDialog) 
-        // we generate an account based on that query. Since
-        // a presumably interesting name was searched for
-        // we set the name on forehand with this guess.
-        case ViewCreateAccountDialog:
-            h.Account = h.Query
-            return GetAddDialog(h.Query)
+    // Show the full list, with not queries filtered.
+    // This occurs when shortcut is invoked.
+    case ViewSearchClearedDialog:
+        // Clear all account data from UI
+        AccountClearInformation(h)
 
-        // When pressing add account in menu, the name
-        // is not determined. We need the view with an
-        // editable name.
-        case ViewAddAccountDialog:
-            h.Query = ""
-            return GetAddDialog(h.Query)
+        // Clear the query
+        h.Query = ""
+        return GetListBody(pass.SearchResult)
 
-        // A dialog to confirm deletion of account.
-        case ViewConfirmDeleteDialog:
-            return GetConfirmDeleteDialog()
+    // When a list item is clicked, bring up account view.
+    case ViewAccountDialog:
+        // Pass information from internal struct
+        // to the UI components.
+        h.Account = pass.Account.Name
+        h.Username = pass.Account.Username
+        h.Password = pass.Account.Password
 
-        // Just some cool about dialog.
-        case ViewAboutDialog:
-            return GetAboutDialog()
+        return GetAccountBody(pass.Account.Name)
 
-        default:
-            log.Println("No such window")
-            log.Fatal(pass.CurrentView)
-            return ""
+    // When an the add item is clicked during an empty
+    // search result, (we are now in GetEmptySearchDialog)
+    // we generate an account based on that query. Since
+    // a presumably interesting name was searched for
+    // we set the name on forehand with this guess.
+    case ViewPresetAddAccountDialog:
+        AccountClearInformation(h)
+        h.Account = h.Query
+        pass.CurrentView = ViewStayAddAccountDialog
+        return GetAddDialog(h.Query)
+
+    // When pressing add account in menu, the name
+    // is not determined. We need the view with an
+    // editable name.
+    case ViewAddAccountDialog:
+        h.Query = ""
+        AccountClearInformation(h)
+        pass.CurrentView = ViewStayAddAccountDialog
+        return GetAddDialog(h.Query)
+
+    // Essentially used only when the add account
+    // dialog navigates back to itself, i.e., when
+    // randomizing password.
+    case ViewStayAddAccountDialog:
+        return GetAddDialog(h.Query)
+
+    // A dialog to confirm deletion of account.
+    case ViewConfirmDeleteDialog:
+        return GetConfirmDeleteDialog()
+
+    case ViewSecureFileDialog:
+        return GetSecureFileDialog()
+
+    // Just some cool about-this-program dialog.
+    case ViewAboutDialog:
+        // Clear all account data from UI
+        AccountClearInformation(h)
+
+        return GetAboutDialog()
+
+    default:
+        // Clear all account data from UI
+        AccountClearInformation(h)
+
+        log.Println("No such window")
+        log.Fatal(pass.CurrentView)
+        return ""
     }
 }
 
@@ -166,34 +148,40 @@ func (h *PassView) Unlock(arg app.ChangeArg) {
     password := arg.Value
 
     // Try to unlock the token with the password
-    token, key, err := UnlockToken(pass.Config.Encrypted.Token, 
-                                   password,
-                                   pass.Config.Encrypted.Salt)
+    token, key, err := UnlockToken(pass.Config.Encrypted.Token,
+        password,
+        pass.Config.Encrypted.Salt)
 
     // If we succed with message authentication, i.e.,
     // if password is correct...
     if err == nil {
         // Progress to unlocked display
         pass.Locked = false
+
+        log.Println("Unlocked")
+
         // Set token
         pass.DecryptedToken = token
         pass.EncryptionKey = key
+
         // Init the unlocked display with all entries
         pass.SearchResult = DoListRequest("")
+
+        // Preset the search dialog
+        pass.CurrentView = ViewSecureFileDialog
+    } else {
+        log.Println(err)
     }
 
-    log.Println(err)
-
-    // Preset the search dialog
-    pass.CurrentView = ViewSearchDialog
-    
     // Show if unlocking was successful
     app.Render(h)
 }
 
 func (h *PassView) Search(arg app.ChangeArg) {
-    // Stay in search view and fetch accounts based on query
+    // Stay in search view...
     pass.CurrentView = ViewSearchDialog
+
+    // ...and fetch accounts based on query
     pass.SearchResult = DoListRequest(arg.Value)
 
     // We need to keep track of the query, since if result is empty
@@ -206,7 +194,10 @@ func (h *PassView) Search(arg app.ChangeArg) {
 }
 
 func (h *PassView) OnHref(URL *url.URL) {
-    // Extract information from query and get account name from query.
+    // Extract information from query and get account name and
+    // its encrypted counterpart from query (this is need since
+    // if we were to encrypt again, we would get a different
+    // encrypted name).
     u := URL.Query()
     h.Query = u.Get("Account")
     encryptedName := u.Get("Encrypted")
@@ -226,11 +217,13 @@ func (h *PassView) AccountCreate(arg app.ChangeArg) {
     pass.Account.Name = h.Query
     pass.Account.Username = ""
     pass.Account.Password = ""
+
     // We need to set encrypted to "", since we are creating a new
     // account -- otherwise it will map to another one.
     pass.Account.Encrypted = ""
 
-    pass.CurrentView = ViewCreateAccountDialog
+    // Set the view.
+    pass.CurrentView = ViewPresetAddAccountDialog
 
     app.Render(h)
 }
@@ -242,6 +235,7 @@ func (h *PassView) AccountAddOk(arg app.ChangeArg) {
     pass.Account.Username = h.Username
     pass.Account.Password = h.Password
 
+    // We will not accept empty names.
     if pass.Account.Name != "" {
         AccountUpdate(h)
     } else {
@@ -255,16 +249,16 @@ func (h *PassView) AccountOk(arg app.ChangeArg) {
 
 func (h *PassView) AccountTrashOk(arg app.ChangeArg) {
     // Send delete request to REST.
-    DoDeleteRequest(pass.Account) 
+    DoDeleteRequest(pass.Account)
 
     // Since we deleted the account, we remove its name
-    // from the search bar
+    // from the search bar.
     h.Query = ""
 
-    // Go back from account view to search view
+    // Go back from account view to search view.
     pass.CurrentView = ViewSearchDialog
 
-    // Go back from account view
+    // Get full list.
     pass.SearchResult = DoListRequest("")
 
     // Tells the app to update the rendering of the component.
@@ -272,7 +266,7 @@ func (h *PassView) AccountTrashOk(arg app.ChangeArg) {
 }
 
 func (h *PassView) AccountTrashCancel(arg app.ChangeArg) {
-    // Go back from trash view to account view
+    // Go back from trash view to account view.
     pass.CurrentView = ViewAccountDialog
 
     // Tells the app to update the rendering of the component.
@@ -283,7 +277,7 @@ func (h *PassView) AccountCancel(arg app.ChangeArg) {
     // Go back from account view to search view.
     pass.CurrentView = ViewSearchDialog
 
-    // Go back from account view
+    // Get full list.
     pass.SearchResult = DoListRequest("")
 
     // Tells the app to update the rendering of the component.
@@ -292,7 +286,7 @@ func (h *PassView) AccountCancel(arg app.ChangeArg) {
 
 func (h *PassView) AccountRandomizePassword(arg app.ChangeArg) {
     // Generate a new password.
-    pass.Account.Password, _ = RandomPassword(DefaultGeneratedPasswordLength)
+    pass.Account.Password, _ = Entropy(DefaultGeneratedPasswordLength)
 
     // Update name and username from UI.
     pass.Account.Name = h.Account
@@ -300,6 +294,10 @@ func (h *PassView) AccountRandomizePassword(arg app.ChangeArg) {
 
     // Update UI with new password
     h.Password = pass.Account.Password
+
+    // Stay in the add account dialog, but do not
+    // wipe anything
+    pass.CurrentView = ViewStayAddAccountDialog
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
@@ -330,7 +328,7 @@ func AccountUpdate(h *PassView) {
     // create a new entry
 
     // Update it on server.
-    DoPutRequest(pass.Account) 
+    DoPutRequest(pass.Account)
 
     // Go back from account view to search view and fetch all accounts
     pass.CurrentView = ViewSearchDialog
@@ -340,15 +338,15 @@ func AccountUpdate(h *PassView) {
 }
 
 func (h *PassView) PickFile(arg app.ChangeArg) {
-    app.NewFilePicker(app.FilePicker {
-            MultipleSelection: false,
-            NoDir:             true,
-            NoFile:            false,
-            OnPick: func(filenames []string) {
-                h.Filename = filepath.Base(filenames[0])
-                app.Render(h)
-            },
-        })
+    app.NewFilePicker(app.FilePicker{
+        MultipleSelection: false,
+        NoDir:             true,
+        NoFile:            false,
+        OnPick: func(filenames []string) {
+            h.Filename = filepath.Base(filenames[0])
+            app.Render(h)
+        },
+    })
 }
 
 func (h *PassView) CreateConfig(arg app.ChangeArg) {
@@ -357,33 +355,40 @@ func (h *PassView) CreateConfig(arg app.ChangeArg) {
         return
     }
 
-    if (len(h.Password) < 4) && (h.Password != h.PasswordAgain) {
+    // Require a minimum length on the password and
+    // that the user actually knew what he/she typed in.
+    if len(h.Password) < MinimumPasswordLength && h.Password != h.PasswordAgain {
         log.Println("Password too short or non-matching.")
         return
     }
 
+    // An empty hostname will not do. We will not perform any
+    // verification of the hostname.
     if h.Hostname == "" {
         log.Println("No hostname.")
         return
     }
 
+    // Port needs to be non-empty...
     if h.Port == "" {
         log.Println("No port.")
         return
     }
 
+    // ...as well as an integer for all I know.
     if _, err := strconv.Atoi(h.Port); err != nil {
         log.Println("Invalid port.")
         return
     }
 
+    // Try to encrypt the token with the password.
     token, salt, err := LockToken(h.Token, h.Password)
     if err != nil {
         log.Println(err)
         return
     }
 
-    // Put data into config struct
+    // Put data into config struct.
     pass.Config.Encrypted.Token = token
     pass.Config.Encrypted.Salt = salt
     pass.Config.Host = h.Hostname

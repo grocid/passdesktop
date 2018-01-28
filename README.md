@@ -13,16 +13,27 @@ and
 token := ChaCha20-Poly1305-Decrypt(encrypted token, key, nonce).
 ```
 
-The decrypted `token` is kept in memory only. Apart from that, it is actually agnostic to the underlying data storage (although, in the case of Vault the database in encrypted with a AES-GCM barrier, and protected with some additional security mechanisms such as token access and secret sharing). Therefore, all entries are encrypted with ChaCha20-Poly1305-Decrypt, under the same key as the token (but of course, different nonces). Inside Vault, the entries have the following format. 
+The decrypted `token` is kept in memory only. Apart from that, it is actually agnostic to the underlying data storage (although, in the case of Vault the database in encrypted with a AES-GCM barrier, and protected with some additional security mechanisms such as token access and secret sharing). Therefore, all entries are encrypted with ChaCha20-Poly1305-Encrypt, under the same key as the token (but of course, different nonces). Inside Vault, the entries have the following format. 
 
 ```
 {
-    "username": <encrypted username>,
-    "password": <encrypted password>
+    <metadata>,
+    data: {
+        encrypted: "
+        ----------------ENCRYPTED----------------   <-- not acutal data
+            {
+                "username": "grocid"
+                "password": "banana"
+                "file": [bytes]
+                "padding": "ASDFvcasdfgSDFDSFASDfsdfmlksdf9032"
+            }
+        -----------------------------------------  <-- not acutal data
+        "
+    }
 }
-```
 
-The account name is also encrypted, in case you do not want to leak which sites you are registred on. In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
+```
+The `padding` is a random string which pads the encrypted data to a minimum length. This to make sure no useable information is leaked (e.g. if your password happens to be very short, then it may be reflected in the length of the ciphertext). Large files are identifiable as files, of course, by just looking at the ciphertext. The account name is also encrypted, in case you do not want to leak which sites you are registred on. In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
 
 ```
 GET /secret/6bb5d1af6cf022c8df559a1b4b0217c92d4e33ffd20abd72865dcccf

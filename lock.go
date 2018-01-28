@@ -31,12 +31,13 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
-    "math/big"
     "crypto/rand"
     "crypto/sha256"
-    "golang.org/x/crypto/pbkdf2"
-    "golang.org/x/crypto/argon2"
+    "encoding/base64"
     "encoding/hex"
+    "golang.org/x/crypto/argon2"
+    "golang.org/x/crypto/pbkdf2"
+    "math/big"
 )
 
 // The alphabet from which characters are drawn. The entropy is per
@@ -45,22 +46,22 @@ import (
 var alphabet = []byte("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
 
 const (
-    NonceLength = 12 // Only applicable to AES-GCM
-    SaltLength = 32
+    NonceLength      = 12 // Only applicable to AES-GCM
+    SaltLength       = 32
     PBKDF2Iterations = 4096
-    Argon2Time = 4
-    Argon2Memory = 32 * 1024
-    Argon2Threads = 4
-    Argon2KeyLen = 32
+    Argon2Time       = 4
+    Argon2Memory     = 32 * 1024
+    Argon2Threads    = 4
+    Argon2KeyLen     = 32
 )
 
-func RandomPassword(length int) (string, error) {
+func Entropy(length int) (string, error) {
     var result string
 
     // Create a random password of specified length.
     for {
         if len(result) >= length {
-          return result, nil
+            return result, nil
         }
         // Read from from a CSPRNG.
         num, err := rand.Int(rand.Reader, big.NewInt(int64(len(alphabet))))
@@ -76,27 +77,60 @@ func RandomPassword(length int) (string, error) {
 func DeriveKey(password []byte, salt []byte) []byte {
     // Setting to specify key derivation algorithm.
     if UseArgon2ForKeyDerivation {
-        return argon2.Key(password, salt, 
-                          Argon2Time,
-                          Argon2Memory,
-                          Argon2Threads,
-                          Argon2KeyLen)
+        // Return derived key from Argon2.
+        return argon2.Key(password, salt,
+            Argon2Time,
+            Argon2Memory,
+            Argon2Threads,
+            Argon2KeyLen)
     } else {
-        // Fallback.
-        return pbkdf2.Key(password, salt, 
-                          PBKDF2Iterations, SaltLength, 
-                          sha256.New)
+        // Fallback to PBKDF2.
+        return pbkdf2.Key(password, salt,
+            PBKDF2Iterations, SaltLength,
+            sha256.New)
     }
 }
 
-func EncryptAndEncode(plaintext string, key []byte) (string, error) {
+/*
+ func PKCS5Padding(src []byte, blockSize int) []byte {
+     padding := blockSize - len(src)%blockSize
+     padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+     return append(src, padtext...)
+ }
+
+
+ func PKCS5UnPadding(src []byte) []byte {
+     length := len(src)
+     unpadding := int(src[length-1])
+     return src[:(length - unpadding)]
+ }*/
+
+func EncryptAndEncodeBase64(plaintext string, key []byte) ([]byte, error) {
     // Encrypt with AEAD.
     ciphertext, err := Chacha20Poly1305Encrypt([]byte(plaintext), key)
 
+    // Return base64 encoded
+    return []byte(base64.StdEncoding.EncodeToString(ciphertext)), err
+}
+
+func Base64DecodeAndDecrypt(base64Ciphertext []byte, key []byte) (string, error) {
+    // Decode the provided base64 string, use strings for simplicity
+    ciphertext, err := base64.StdEncoding.DecodeString(string(base64Ciphertext))
+
+    // Use key to decrypt ciphertext
+    token, err := Chacha20Poly1305Decrypt(ciphertext, key)
+    return string(token), err
+}
+
+func EncryptAndEncodeHex(plaintext string, key []byte) (string, error) {
+    // Encrypt with AEAD.
+    ciphertext, err := Chacha20Poly1305Encrypt([]byte(plaintext), key)
+
+    // Return hexencoded
     return string(hex.EncodeToString(ciphertext)), err
 }
 
-func DecodeAndDecrypt(hexCiphertext string, key []byte) (string, error) {
+func HexDecodeAndDecrypt(hexCiphertext string, key []byte) (string, error) {
     // Decode the provided hex strings
     ciphertext, _ := hex.DecodeString(hexCiphertext)
 
@@ -114,7 +148,7 @@ func LockToken(token string, password string) (string, string, error) {
     // Derive key from password + salt.
     key := DeriveKey([]byte(password), salt)
 
-    hexToken, err := EncryptAndEncode(token, key)
+    hexToken, err := EncryptAndEncodeHex(token, key)
 
     if err != nil {
         return "", "", err
@@ -132,7 +166,7 @@ func UnlockToken(hexToken string, password string, hexSalt string) (string, []by
     // Derive key from password + salt.
     key := DeriveKey([]byte(password), salt)
 
-    token, err := DecodeAndDecrypt(hexToken, key)
+    token, err := HexDecodeAndDecrypt(hexToken, key)
 
     // Take care of errors, i.e., if message authentication failed...
     if err != nil {
@@ -142,4 +176,3 @@ func UnlockToken(hexToken string, password string, hexSalt string) (string, []by
     // ...otherwise, return to UI
     return token, key, nil
 }
-

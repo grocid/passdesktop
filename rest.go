@@ -31,47 +31,65 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 package main
 
 import (
-    "net/http"
+    "bytes"
+    "encoding/json"
     "io/ioutil"
     "log"
-    "encoding/json"
+    "net/http"
     "strings"
-    "bytes"
 )
 
 type (
     UserData struct {
         Password string `json:"password"`
-        Username string  `json:"username"`
+        Username string `json:"username"`
+        File     []byte `json:"file"`
+        Padding  string `json:"padding"`
     }
 
     VaultStruct struct {
-        Data UserData `json:"data"`
+        Data VaultStructEnc `json:"data"`
+    }
+
+    VaultStructEnc struct {
+        Encrypted []byte `json:"encrypted"`
     }
 
     VaultResponseList struct {
         Data struct {
-            Keys  []string `json:"keys"`
+            Keys []string `json:"keys"`
         } `json:"data"`
     }
 )
 
-const VaultTokenHeader = "X-Vault-Token"
+const (
+    VaultTokenHeader  = "X-Vault-Token"
+    MinimumDataLength = 3 * 32
+)
 
-
-func Enc(data string) (string, error) {
-    encData, err := EncryptAndEncode(data, pass.EncryptionKey)
+func EncHex(data string) (string, error) {
+    encData, err := EncryptAndEncodeHex(data, pass.EncryptionKey)
     return encData, err
 }
 
-func Dec(data string) (string, error) {
-    encData, err := DecodeAndDecrypt(data, pass.EncryptionKey)
+func DecHex(data string) (string, error) {
+    encData, err := HexDecodeAndDecrypt(data, pass.EncryptionKey)
+    return encData, err
+}
+
+func EncBase64(data string) ([]byte, error) {
+    encData, err := EncryptAndEncodeBase64(data, pass.EncryptionKey)
+    return encData, err
+}
+
+func DecBase64(data []byte) (string, error) {
+    encData, err := Base64DecodeAndDecrypt(data, pass.EncryptionKey)
     return encData, err
 }
 
 func DoRequest(operation string, s string) (*http.Response, error) {
     // Create the request based on operation input.
-    req, err := http.NewRequest(operation, pass.EntryPoint + s, nil)
+    req, err := http.NewRequest(operation, pass.EntryPoint+s, nil)
 
     if err != nil {
         return nil, err
@@ -91,7 +109,7 @@ func DoRequest(operation string, s string) (*http.Response, error) {
 
 func DoGetRequest(data Entry) AccountInfo {
     // Retrieve data for a specific account.
-    resp, err := DoRequest(http.MethodGet, "/" + data.Encrypted)
+    resp, err := DoRequest(http.MethodGet, "/"+data.Encrypted)
 
     if err != nil {
         log.Fatal(err)
@@ -108,46 +126,61 @@ func DoGetRequest(data Entry) AccountInfo {
     // ...and parse the JSON
     r := VaultStruct{}
     json.Unmarshal([]byte(body), &r)
-    
+
+    // Decrypt
+    decryptedPayload, err := DecBase64(r.Data.Encrypted)
+
     // ...generate a AccountInfo struct...
     account := AccountInfo{}
-    
+    json.Unmarshal([]byte(decryptedPayload), &account)
+
     // ...with the proper information...
     account.Name = data.Name
     account.Encrypted = data.Encrypted
-    account.Username, err = Dec(r.Data.Username) // should handle this
-    account.Password, err = Dec(r.Data.Password)
-    
+
     // ...and return to caller.
     return account
 }
 
-
 func DoPutRequest(data AccountInfo) error {
-    // Create payload
-    encUsername, err := Enc(data.Username)
-    encPassword, err := Enc(data.Password)
-    payload := &UserData {
-        Username: encUsername,
-        Password: encPassword,
+    // Get some padding data, so that, ciphertext length
+    // does not reveal information about password lenth.
+    contentLength := len(data.Username) + len(data.Username) + len(data.File)
+
+    padding := ""
+    if contentLength < MinimumDataLength {
+        padding, _ = Entropy(MinimumDataLength - contentLength)
+    }
+
+    payload := &UserData{
+        Username: data.Username,
+        Password: data.Password,
+        File:     data.File,
+        Padding:  padding,
     }
 
     // Encode data as JSON.
     jsonPayload, err := json.Marshal(payload)
-    encodedPayload := bytes.NewBuffer(jsonPayload)
+    encryptedPayload, err := EncBase64(string(jsonPayload))
 
     if data.Encrypted == "" {
-        data.Encrypted, err = Enc(data.Name)
+        data.Encrypted, err = EncHex(data.Name)
     }
 
     if err != nil {
         return err
     }
 
+    vs := VaultStructEnc{
+        Encrypted: encryptedPayload,
+    }
+
+    jsonPayload, err = json.Marshal(vs)
+
     // Create the actual request.
-    req, err := http.NewRequest(http.MethodPut, 
-                                pass.EntryPoint + "/" + data.Encrypted,
-                                encodedPayload)
+    req, err := http.NewRequest(http.MethodPut,
+        pass.EntryPoint+"/"+data.Encrypted,
+        bytes.NewBuffer(jsonPayload))
     req.Header.Add(VaultTokenHeader, pass.DecryptedToken)
 
     if err != nil {
@@ -169,7 +202,7 @@ func DoDeleteRequest(data AccountInfo) error {
         log.Fatal("No encrypted data stored")
     }
 
-    _, err := DoRequest(http.MethodDelete, "/" + data.Encrypted)
+    _, err := DoRequest(http.MethodDelete, "/"+data.Encrypted)
 
     return err
 }
@@ -178,8 +211,9 @@ func DoListRequest(s string) []Entry {
     // Do a LIST to get all entries.
     resp, err := DoRequest("LIST", "")
 
+    // If it fails, use local copy
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
     }
 
     // Read in the data...
@@ -187,7 +221,7 @@ func DoListRequest(s string) []Entry {
     body, err := ioutil.ReadAll(resp.Body)
 
     if err != nil {
-        log.Fatal(err)
+        log.Println(err)
     }
 
     // ...and parse JSON.
@@ -198,13 +232,12 @@ func DoListRequest(s string) []Entry {
     // decrypted so we can filter them based on our
     // search query.
     accounts := Map(r.Data.Keys, func(v string) Entry {
-                        decrypted, err := Dec(v)
-                        if err != nil {
-                            log.Println(v, err)
-                            return Entry{}
-                        }
-                        return Entry{decrypted, v}
-                    })
+        decrypted, err := DecHex(v)
+        if err != nil {
+            return Entry{}
+        }
+        return Entry{decrypted, v}
+    })
 
     // Filter out erronous entries, which may have failed
     // due to format or message-authentication error.
