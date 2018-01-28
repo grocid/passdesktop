@@ -5,17 +5,17 @@
 Pass Desktop is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Hashicorp Vault](https://www.vaultproject.io) (from now on called just Vault), where all accounts with associated usernames and passwords are stored. Any instance of Vault can be used, no additional setup. So if you are already running Vault, just generate a token and you are ready to go.
 
 Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with ChaCha20-Poly1305. The encryption key is derived as 
-```
+```go
 key := Argon2(password, salt, *params)
 ```
 and 
-```
+```go
 token := ChaCha20-Poly1305-Decrypt(encrypted token, key, nonce).
 ```
 
 The decrypted `token` is kept in memory only. Apart from that, it is actually agnostic to the underlying data storage (although, in the case of Vault the database in encrypted with a AES-GCM barrier, and protected with some additional security mechanisms such as token access and secret sharing). Therefore, all entries are encrypted with ChaCha20-Poly1305-Encrypt, under the same key as the token (but of course, different nonces). Inside Vault, the entries have the following format. 
 
-```
+```json
 {
     <metadata>,
     data: {
@@ -35,7 +35,7 @@ The decrypted `token` is kept in memory only. Apart from that, it is actually ag
 ```
 The `padding` is a random string which pads the encrypted data to a minimum length. This to make sure no useable information is leaked (e.g. if your password happens to be very short, then it may be reflected in the length of the ciphertext). Large files are identifiable as files, of course, by just looking at the ciphertext. The account name is also encrypted, in case you do not want to leak which sites you are registred on. In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
 
-```
+```sh
 GET /secret/6bb5d1af6cf022c8df559a1b4b0217c92d4e33ffd20abd72865dcccf
 ```
 
@@ -76,7 +76,7 @@ Pass Desktop keeps no information stored on disk. Search operations are done by 
 ## Building
 
 It is as simple as
-```
+```sh
 go build
 ```
 which creates a standalone executable. To build a real .App, I suggest using [macpack](https://github.com/murlokswarm/macpack).
@@ -85,7 +85,7 @@ The application will try to load your CA certificate, located as an entry inside
 CA will be used to authenticate the server you are running Vault on (we do not really need anything else than a self-signed certificate). When you setup your server, you generated a CA. This is the file you need.
 The configuration `config.json` is a file of the format
 
-```
+```json
 {
 	"encrypted": {
 		"token": "..."
@@ -105,11 +105,11 @@ and put these into the JSON.
 ## Setting up the backend
 
 To get Pass working, you need to install and configure Vault on the remote server. First, start the storage backend for Vault. This can be SQL, but I would recommend [Consul](https://www.consul.io). Start Consul as follows:
-```
+```sh
 consul agent -server -config-dir=/etc/consul.d/bootstrap/ > /dev/null 2>&1 &
 ```
 Let the contents of `/etc/consul.d/bootstrap/config.json` be
-```
+```json
 {
     "bootstrap": true,
     "server": true,
@@ -130,7 +130,7 @@ Then, Vault can be started in the following way.
 vault server -config=/etc/vault.d/config.json > /dev/null 2>&1 &
 ```
 where `/etc/vault.d/config.json` contains
-```
+```json
 {
     "storage": {
         "consul": {
@@ -150,7 +150,7 @@ where `/etc/vault.d/config.json` contains
 }
 ```
 Vault binds to `127.0.0.1`, so we need fw to access it (if you do not want to use fw, then bind the listener to `0.0.0.0:8001`). We can start it as
-```
+```sh
 ./fw 0.0.0.0:8001 127.0.0.1:8200 2>&1 &
 ```
 
