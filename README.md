@@ -126,7 +126,7 @@ Let the contents of `/etc/consul.d/bootstrap/config.json` be
 }
 ```
 Then, Vault can be started in the following way.
-```
+```sh
 vault server -config=/etc/vault.d/config.json > /dev/null 2>&1 &
 ```
 where `/etc/vault.d/config.json` contains
