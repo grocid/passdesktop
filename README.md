@@ -17,14 +17,14 @@ The decrypted `token` is kept in memory only. Apart from that, it is actually ag
 
 ```json
 {
-    <metadata>,
-    data: {
-        encrypted: "
+    "<metadata>",
+    "data": {
+        "encrypted": "
         ----------------ENCRYPTED----------------   <-- not acutal data
             {
-                "username": "grocid"
-                "password": "banana"
-                "file": [bytes]
+                "username": "grocid",
+                "password": "banana",
+                "file": [bytes],
                 "padding": "ASDFvcasdfgSDFDSFASDfsdfmlksdf9032"
             }
         -----------------------------------------  <-- not acutal data
