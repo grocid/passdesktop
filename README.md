@@ -111,12 +111,12 @@ The configuration `config.json` is a file of the format
 
 ```json
 {
-	"encrypted": {
-		"token": "...",
-		"salt": "..."
-	},
-	"host": "myserver.com",
-	"port": "8001",
+    "encrypted": {
+        "token": "...",
+        "salt": "..."
+    },
+    "host": "myserver.com",
+    "port": "8001",
     "ca": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 }
 ```
