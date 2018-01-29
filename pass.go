@@ -233,7 +233,7 @@ func (h *PassView) AccountTrashOk(arg app.ChangeArg) {
     pass.CurrentView = ViewSearchDialog
 
     // Get full list.
-    VaultListSecrets(previousQuery)
+    //VaultListSecrets(previousQuery)
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
@@ -253,7 +253,7 @@ func (h *PassView) AccountCancel(arg app.ChangeArg) {
 
     // Get full list.
     h.Query = previousQuery
-    VaultListSecrets(previousQuery)
+    //VaultListSecrets(previousQuery)
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
@@ -303,7 +303,7 @@ func AccountUpdate(h *PassView) {
     // Go back from account view to search view and fetch all accounts
     pass.CurrentView = ViewSearchDialog
 
-    VaultListSecrets("")
+    //VaultListSecrets("")
 
     app.Render(h)
 }

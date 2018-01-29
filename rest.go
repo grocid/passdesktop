@@ -143,7 +143,7 @@ func Request(operation string, s string, data *bytes.Buffer) (MyResponse, error)
     var err error
     var req *http.Request
 
-    log.Println(operation, pass.EntryPoint+s)
+    log.Println(operation, pass.EntryPoint+s, pass.CurrentView)
 
     // These two cases need to be handled separarely, i.e., the buffer must
     // explicitly be set to nil, we cannot pass a pointer with nil, or

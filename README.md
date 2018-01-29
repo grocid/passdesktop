@@ -48,9 +48,15 @@ Pass perfoms, at every query, real-time decryption of the content. No data is ex
 
 The program is fairly short and easily auditable, if anyone feels encouraged to do it.
 
-## Not implemented...
+## Features
 
- - Mutual authentication as an option for communicating with Vault
+- Storing username and passwords.
+- Storing small files such as SSH keys.
+
+### Planned
+
+ - Mutual authentication as an option for communicating with Vault.
+ - OTP generators. Vault has an option for this, so that the shared secret is stored inside Vault. The drawback here is that it will rely only on the AES-GCM wall, which of course might be enough. Another option is to store the shared secret in Pass, which then generates OTP locally. Note that (this sort of) takes the purpose out of multi-factor authentication and should therefore be used conservatively.
 
 ## Seurity considerations
 
@@ -63,7 +69,7 @@ The program is fairly short and easily auditable, if anyone feels encouraged to 
 
 ### How to sync between devices
 
-If you created an App with macpack, then you can simply copy the App, because `ca.crt` and `config.json` will be included. Otherwise these two files need to be copied as well. Even though the token in `config.json` is encrypted, I suggest not storing the config on insecure media like Dropbox or unencrypted mail.
+If you created an App with macpack, then you can simply copy the App, because the configuration file `config.json` will be included. Otherwise this file needs to be copied to the target computer. Even though the token in `config.json` is encrypted, I suggest not storing the config on insecure media like Dropbox or unencrypted mail.
 
 ### Possible leaks
 
@@ -77,7 +83,11 @@ What about Spectre and Meltdown? Pass Desktop is agnostic to these attacks. If t
 
 Pass Desktop keeps no information stored on disk. Search operations are done by performing a `LIST` (Hashicorp-specific operation), which fetches a JSON with all keys (account names) from the server, after which decryption and filtering operations are performed locally. 
 
-Every time a `PUT` is made, it will simultaneously update a random value on the path `/secret/updated`. When performing a search, it will check whether `/secret/updated` matches a locally stored value. If not, it will fetch the contents. This, to avoid fetching already known data. This makes the `PUT` twice as expensive in terms of requests made, but as a trade-off, searching large lists will be much less expensive.
+## Minimizing query complexity
+
+Every time a `PUT` or  `DELETE` is invoked, it will simultaneously update a tag (random value) on the path `/secret/updated`, but also a local variable `LocalUpdate`. When performing a search, it will check whether if `LocalUpdate == true` (in case the modifying operation came from the local client). If not, it will check if `/secret/updated` matches a locally stored value. If `LocalUpdate` was set or the tags dont match, Pass will fetch the contents from the server. This, to avoid fetching already known data. This makes the less common `PUT` and `DELETE` twice as expensive in terms of requests made, but as a trade-off, searching large lists will be much less expensive.
+
+### Graphics
 
 Moreever, Pass Desktop keeps an iconset, where each filename is associated with the account name (favicons are too small). Since there is a mapping betwen account names and the iconset, the recommended convention is to name accounts after the domain. The iconset can be extended by the user with minor effort. The memory usage is about 50 MBs of RAM.
 
