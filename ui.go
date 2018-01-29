@@ -32,10 +32,8 @@ package main
 
 import (
     "fmt"
-    "os"
+    "strconv"
 )
-
-const ImagePathSuffix = "/../Resources/iconpack/"
 
 func GetCreateConfigDialog() string {
     return `
@@ -179,15 +177,6 @@ func GetEmptySearchDialog() string {
 }
 
 func GetAddDialog(account string) string {
-    // Get the path
-    imagePath := pass.FullPath + ImagePathSuffix
-
-    // Some ugly solution since the fallback on image not found does not work...
-    image := account
-    if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
-        image = "default"
-    }
-
     return `
 <div class="WindowLayout">    
     <div class="SearchLayout">
@@ -206,7 +195,7 @@ func GetAddDialog(account string) string {
                         margin-left: auto; 
                         margin-right: auto;
                         margin-top: -webkit-calc(20vh - 20px);">
-                 <img src="` + imagePath + image + `.png" 
+                 <img src="` + GetImage(account) + `" 
                       style="max-width: 128px; "/>
                  <p><input name="Name"
                        type="text"
@@ -257,15 +246,6 @@ func GetAddDialog(account string) string {
 
 // Show account details
 func GetAccountBody(account string) string {
-    // Get the path
-    imagePath := pass.FullPath + ImagePathSuffix
-
-    // Some ugly solution since the fallback on image not found does not work...
-    image := account
-    if _, err := os.Stat(imagePath + account + ".png"); os.IsNotExist(err) {
-        image = "default"
-    }
-
     return `
 <div class="WindowLayout">    
     <div class="SearchLayout">
@@ -285,7 +265,7 @@ func GetAccountBody(account string) string {
                         margin-left: auto; 
                         margin-right: auto;
                         margin-top: -webkit-calc(20vh - 20px);">
-                 <img src="` + imagePath + image + `.png" 
+                 <img src="` + GetImage(account) + `" 
                       style="max-width: 128px; "/>
                  <h1>{{.Account}}</h1>
             </div>
@@ -328,24 +308,25 @@ func GetAccountBody(account string) string {
 func GetListBody(searchResults []Entry) string {
     var accountListFormatted string
 
-    imagePath := pass.FullPath + ImagePathSuffix
-
     // Iterate through the search results.
-    for _, element := range searchResults {
-        image := element.Name
+    for _, entry := range searchResults {
+        // Format listitem.
+        name := RemoveTypeFromName(entry.Name)
+        entryType := GetTypeFromName(entry.Name)
 
-        // Revert to default icon if account icon does not exist.
-        if _, err := os.Stat(imagePath + element.Name + ".png"); os.IsNotExist(err) {
-            image = "default"
+        if entryType == TypeOTP {
+
         }
 
-        // Format listitem.
-        item := fmt.Sprintf(`<a href="PassView?Account=%s;Encrypted=%s">
+        item := fmt.Sprintf(`<a href="PassView?Account=%s;Encrypted=%s;EntryType=%v">
                                 <li>
-                                    <img src="%s%s.png"/>
-                                    <div class="SearchListItemCaption"><span>%s</span></div>
+                                    <img src="%s"/>
+                                    <div class="SearchListItemCaption">%s <font color="deeppink">%s</font></div>
                                 </li>
-                             </a>`, element.Name, element.Encrypted, imagePath, image, element.Name)
+                             </a>`,
+            name, entry.Encrypted, entryType,
+            ImageFromType(name, entryType),
+            name, GetDescriptionFromType(entryType))
 
         // Concatenate list.
         accountListFormatted = accountListFormatted + item
@@ -369,22 +350,22 @@ func GetListBody(searchResults []Entry) string {
          <div clickable="on" 
               class="scrollable">
             <div class="animated">
-                <ul>` + accountListFormatted + `
-                </ul>
+                <ul>` + accountListFormatted + `</ul>
             </div>
         </div>
     </div>
 </div>`
 }
 
-func GetSecureFileDialog() string {
+func GetSecureFileDialog(fileData []byte) string {
     return `
 <div class="WindowLayout">    
     <div class="SearchLayout">
         <input type="text"
-               value=""
+               value="{{html .Query}}"
                placeholder="Account"
                onchange="Search"
+               autofocus="true"
                autocomplete="off" 
                autocorrect="off" 
                autocapitalize="off" 
@@ -396,17 +377,54 @@ func GetSecureFileDialog() string {
                         margin-left: auto; 
                         margin-right: auto;
                         margin-top: -webkit-calc(20vh - 20px);">
-                 <img src="` + pass.FullPath + ImagePathSuffix + `ssh_key.png" 
-                      style="max-width: 128px; "/>
-                 <h1>Min SSH-nyckel</h1>
+            ` + GetFingerprint(fileData) + `
+            <h1>{{.Account}}</h1>
             </div>
-          <h2>Files are limited to 512 kb</h2>
+          <h2>Size</h2>
+          <p style="text-align: center">` + strconv.Itoa(len(fileData)) + ` bytes</p>
           </div>
           <div class="bottom-toolbar">
               <div>
-                  <button class="button ok" onclick=""/>
+                  <button class="button ok" onclick="AccountOk"/>
                   <button class="button add" onclick=""/>
                   <button class="button download" onclick=""/>
+                  <button class="button delete" onclick="AccountDelete"/>
+              </div>
+          </div>
+     </div>
+</div>`
+}
+
+func GetOTPDialog() string {
+    return `
+<div class="WindowLayout">    
+    <div class="SearchLayout">
+        <input type="text"
+               value="{{html .Query}}"
+               placeholder="Account"
+               onchange="Search"
+               autofocus="true"
+               autocomplete="off" 
+               autocorrect="off" 
+               autocapitalize="off" 
+               spellcheck="false"
+               selectable="on" 
+               class="editable searchfield"/>
+        <div class="animated">
+            <div style="text-align: center; 
+                        margin-left: auto; 
+                        margin-right: auto;
+                        margin-top: -webkit-calc(20vh - 20px);">
+            <img src="` + GetImage("otp") + `" style="max-width: 128px;"/>
+            <h1>{{.Account}}</h1>
+            </div>
+          <h2>{{.Password}}</h2>
+          </div>
+          <div class="bottom-toolbar">
+              <div>
+                  <button class="button ok" onclick="AccountCancel"/>
+                  <button class="button rerand" onclick="AccountRefreshOTP"/>
+                  <button class="button delete" onclick="AccountDelete"/>
               </div>
           </div>
      </div>

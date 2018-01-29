@@ -60,7 +60,7 @@ It may therefore seem unncessary to encrypt data twice. If you are running a sec
 ### Planned
 
  - Mutual authentication as an option for communicating with Vault.
- - OTP generators. Vault has an option for this, so that the shared secret is stored inside Vault. The drawback here is that it will rely only on the AES-GCM wall, which of course might be enough. Another option is to store the shared secret in Pass, which then generates OTP locally. Note that (this sort of) takes the purpose out of multi-factor authentication and should therefore be used conservatively.
+ - OTP generator. Vault has an option for this, so that the shared secret is stored inside Vault. The drawback here is that it will rely only on the AES-GCM wall, which of course might be enough. Another option is to store the shared secret in Pass, which then generates OTP locally. Note that (this sort of) takes the purpose out of multi-factor authentication and should therefore be used conservatively.
 
 ## Seurity considerations
 

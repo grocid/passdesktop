@@ -36,6 +36,7 @@ import (
     "io/ioutil"
     "log"
     "net/http"
+    "sort"
     "strings"
 )
 
@@ -285,7 +286,7 @@ func VaultListSecrets(matchingString string) []Entry {
                 if err != nil {
                     return Entry{}
                 }
-                return Entry{decrypted, v}
+                return Entry{decrypted, v, 0} // TODO
             })
 
         // Filter out erronous entries, which may have failed
@@ -300,6 +301,19 @@ func VaultListSecrets(matchingString string) []Entry {
     } else {
         log.Println("Not tag change: using cached results")
     }
+
+    sort.Slice(pass.SearchResult,
+        func(i, j int) bool {
+            a := strings.ToLower(pass.SearchResult[i].Name)
+            b := strings.ToLower(pass.SearchResult[j].Name)
+            switch strings.Compare(a, b) {
+            case -1:
+                return true
+            case 1:
+                return false
+            }
+            return a > b
+        })
 
     // If the empty matchingString should match all results, while
     // the non-empty must be substring of the results.

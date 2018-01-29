@@ -38,6 +38,7 @@ import (
     _ "github.com/murlokswarm/mac"
     "log"
     "net/http"
+    //_ "net/http/pprof"
     "os"
     "path/filepath"
     "time"
@@ -58,8 +59,9 @@ const (
     ViewStayAddAccountDialog   = 5
     ViewAddAccountDialog       = 6
     ViewSecureFileDialog       = 7
-    ViewUnlockDialog           = 8
-    ViewAboutDialog            = 9
+    ViewOTPDialog              = 8
+    ViewUnlockDialog           = 9
+    ViewAboutDialog            = 10
 )
 
 const (

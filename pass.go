@@ -38,6 +38,12 @@ import (
     "strconv"
 )
 
+const (
+    TypeUserCredentials = 0
+    TypeOTP             = 1
+    TypeFile            = 2
+)
+
 // To remember the query we did before we entered an account.
 // When pressing back, we want to return to that query.
 var previousQuery string
@@ -127,7 +133,14 @@ func (h *PassView) Render() string {
         return GetConfirmDeleteDialog()
 
     case ViewSecureFileDialog:
-        return GetSecureFileDialog()
+        h.Account = pass.Account.Name
+        return GetSecureFileDialog(pass.Account.File)
+
+    case ViewOTPDialog:
+        h.Account = pass.Account.Name
+        log.Println(pass.Account.Password)
+        h.Password = ComputeOTPCode(pass.Account.Password)
+        return GetOTPDialog()
 
     // Just some cool about-this-program dialog.
     case ViewAboutDialog:
@@ -154,10 +167,23 @@ func (h *PassView) OnHref(URL *url.URL) {
     u := URL.Query()
     h.Query = u.Get("Account")
     encryptedName := u.Get("Encrypted")
+    entryType, err := strconv.Atoi(u.Get("EntryType"))
+
+    if err != nil {
+        log.Println("Failed to get EntryType")
+    }
 
     // Go to account view and fetch information from server
-    pass.CurrentView = ViewAccountDialog
-    pass.Account = VaultReadSecret(Entry{h.Query, encryptedName})
+    switch entryType {
+    case TypeFile:
+        pass.CurrentView = ViewSecureFileDialog
+    case TypeOTP:
+        pass.CurrentView = ViewOTPDialog
+    default:
+        pass.CurrentView = ViewAccountDialog
+    }
+
+    pass.Account = VaultReadSecret(Entry{h.Query, encryptedName, entryType})
 
     // Tells the app to update the rendering of the component.
     app.Render(h)
@@ -283,6 +309,11 @@ func (h *PassView) AccountDelete(arg app.ChangeArg) {
     app.Render(h)
 }
 
+func (h *PassView) AccountRefreshOTP(arg app.ChangeArg) {
+    // Tells the app to update the rendering of the component.
+    app.Render(h)
+}
+
 func AccountClearInformation(h *PassView) {
     h.Account = ""
     h.Username = ""
@@ -333,7 +364,7 @@ func (h *PassView) Unlock(arg app.ChangeArg) {
         VaultListSecrets("")
 
         // Preset the search dialog
-        pass.CurrentView = ViewSecureFileDialog
+        pass.CurrentView = ViewSearchDialog
     } else {
         log.Println(err)
     }

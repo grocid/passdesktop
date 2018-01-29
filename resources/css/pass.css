@@ -1,3 +1,7 @@
+:root {
+    --type-descriptor:#06c;
+}
+
 * {
     font-family: -apple-system;
     font-weight: 400; 
@@ -92,16 +96,30 @@ li img {
 }
 
 li {
-  list-style-type: none;
-  padding: 4px;
-  overflow: auto;
-  border-radius: 5px;
+    list-style-type: none;
+    padding: 4px;
+    overflow: auto;
+    border-radius: 5px;
 }
 
 li:hover {
-  list-style-type: none;
-  background: rgba(255, 255, 255, 0.1);
-  cursor: pointer;
+    list-style-type: none;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+}
+
+.grid-container {
+    border-radius: 5px;
+    display: inline-grid;
+    grid-template-columns: auto auto auto auto;
+    padding: 0px;
+}
+.grid-item {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 0px;
+    padding: 16px;
+    font-size: 30px;
+    text-align: center;
 }
 
 ::-webkit-input-placeholder { /* Chrome/Opera/Safari */

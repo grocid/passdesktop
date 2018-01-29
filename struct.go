@@ -36,6 +36,7 @@ type (
     Entry struct {
         Name      string
         Encrypted string
+        EntryType int
     }
 
     Application struct {
