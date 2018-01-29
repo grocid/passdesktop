@@ -15,7 +15,9 @@ and
 token := ChaCha20-Poly1305-Decrypt(encrypted token, key, nonce).
 ```
 
-The decrypted `token` is kept in memory only. Apart from that, it is actually agnostic to the underlying data storage (although, in the case of Vault the database in encrypted with a AES-GCM barrier, and protected with some additional security mechanisms such as token access and secret sharing). Therefore, all entries are encrypted with ChaCha20-Poly1305-Encrypt, under the same key as the token (but of course, different nonces). Inside Vault, the entries have the following format. 
+The decrypted `token` is kept in memory only. Apart from that, it is actually agnostic to the underlying data storage. Therefore, all entries are encrypted with ChaCha20-Poly1305-Encrypt, under the same key as the token (but of course, different nonces). Although, in the case of Vault the database in encrypted with a AES-GCM barrier and protected with some additional security mechanisms such as token access and secret sharing. 
+
+Inside Vault, the entries have the following format. 
 
 ```
 {
@@ -47,6 +49,8 @@ Pass perfoms, at every query, real-time decryption of the content. No data is ex
 ![Decrypting token](doc/decryptingtoken.png)
 
 The program is fairly short and easily auditable, if anyone feels encouraged to do it.
+
+It may therefore seem unncessary to encrypt data twice. If you are running a secured instance of Vault -- then probably -- yes. So, why have I decided to use Vault as the storage? Vault is widely used software for storing secrets and exists in many production environments. It is reasonably fast (I would say, about as fast a normal database). Pass Desktop should be a plug-and-play experience. Nonetheless, if one would like to use a different kind of storage, rewriting the operations to another database is smooth sailin' ;-)
 
 ## Features
 
