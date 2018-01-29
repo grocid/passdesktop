@@ -38,7 +38,7 @@ Inside Vault, the entries have the following format.
 
 ```
 
-The `padding` is a random string which pads the encrypted data to a minimum length. This to make sure no useable information is leaked (e.g. if your password happens to be very short, then it may be reflected in the length of the ciphertext). Large files are identifiable as files, of course, by just looking at the ciphertext. The account name is also encrypted, in case you do not want to leak which sites you are registred on. In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
+The `padding` is a random string which pads the encrypted data to a minimum length. This to make sure no useable information is leaked (e.g. if your password happens to be very short, then it may be reflected in the length of the ciphertext). Large files are identifiable as files, of course, by just looking at the ciphertext. The account name is also encrypted, in case you do not want to leak which sites you are registered on (provided the improbable scenario that your token gets stolen but not your salt and password, or that your server provider is malicious and is able to intercept the unseal keys to your Vault instance). In terms of Vault, the get request for a specific secret, let us say Github, would be something like 
 
 ```sh
 GET /secret/6bb5d1af6cf022c8df559a1b4b0217c92d4e33ffd20abd72865dcccf
