@@ -1,0 +1,41 @@
+{
+    "name": "Pass",
+    "id": "org.grocid.net.pass",
+    "version": "1.0",
+    "build-number": 1,
+    "icon": "icon.png",
+    "dev-region": "en",
+    "deployment-target": "10.12",
+    "copyright": "Copyright © 2018 Carl Löndahl. All rights reserved",
+    "role": "None",
+    "category": "",
+    "sandbox": false,
+    "capabilities": {
+        "network": {
+            "in": true,
+            "out": true
+        },
+        "hardware": {
+            "camera": false,
+            "microphone": false,
+            "usb": false,
+            "printing": false,
+            "bluetooth": false
+        },
+        "app-data": {
+            "contacts": false,
+            "location": false,
+            "calendar": false
+        },
+        "file-access": {
+            "user-selected": "",
+            "downloads": "",
+            "pictures": "",
+            "music": "",
+            "movies": ""
+        }
+    },
+    "store": false,
+    "sign-id": "",
+    "supported-files": []
+}
