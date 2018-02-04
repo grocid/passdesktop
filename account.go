@@ -129,11 +129,17 @@ func (h *Account) OnHref(URL *url.URL) {
     u := URL.Query()
     h.Title = u.Get("Name")
 
-    restResponse := restClient.VaultReadSecret(
+    restResponse, err := restClient.VaultReadSecret(
         &rest.Name{
             Text:      h.Title,
             Encrypted: u.Get("Encrypted"),
         })
+
+    if err != nil {
+        log.Println(err)
+        return
+    }
+
     h.Data = *restResponse
 
     // Acquire the image name. If it exists in preloaded map,
@@ -163,7 +169,12 @@ func (h *Account) OK() {
         }
         // Modify the decoded entry so that it matches
         //the contents of the UI.
-        restClient.VaultWriteSecret(&h.Data)
+        err := restClient.VaultWriteSecret(&h.Data)
+
+        if err != nil {
+            log.Println(err)
+            return
+        }
     }
     // Now, we just need to go back.
     h.Cancel()

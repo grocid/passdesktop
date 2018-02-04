@@ -60,10 +60,14 @@ func (h *File) Render() string {
 }
 
 func GetFingerprint(data []byte, r int, g int, b int) string {
+    // Generate a hash from file. This is only for visualization,
+    // and not for cryptographic purposes. Information leak through
+    // fingerprint image is negligible. 
     hashFunction := sha1.New()
     hashFunction.Write(data)
     hashDigest := hashFunction.Sum(nil)
 
+    // Generate a grid programatically.
     grid := `<div class="grid-container">`
     for i := 0; i < 16; i++ {
         item := fmt.Sprintf(`<div class="grid-item"
@@ -82,11 +86,17 @@ func (h *File) OnHref(URL *url.URL) {
     // encrypted name).
     u := URL.Query()
     h.Title = u.Get("Name")
-    restResponse := restClient.VaultReadSecret(
+    restResponse, err := restClient.VaultReadSecret(
         &rest.Name{
             Text:      h.Title,
             Encrypted: u.Get("Encrypted"),
         })
+
+    if err != nil {
+        log.Println(err)
+        return
+    }
+
     h.Data = *restResponse
 
     // Tells the app to update the rendering of the component.

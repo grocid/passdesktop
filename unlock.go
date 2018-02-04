@@ -69,38 +69,47 @@ func (h *UnlockScreen) Render() string {
 }
 
 func (h *UnlockScreen) Unlock(arg app.ChangeArg) {
-    // Get the password.
+    // Get the password from user input.
     password := arg.Value
     salt, _ := hex.DecodeString(config.Encrypted.Salt)
 
-    // Verify password against encrypted token + mac
+    // Verify password against encrypted token + mac.
     lock := lock.New(password, salt)
     _, err := lock.UnlockToken(config.Encrypted.Token)
 
-    if err == nil {
-        log.Println("Unlocked.")
-
-        pass.Locked = false
-        restClient = rest.New(&lock)
-        restClient.Init(config.Host, config.Port, config.CA)
-        restClient.Unlock(config.Encrypted.Token)
-
-        config = util.Configuration{}
-
-        log.Println("Fetching data.")
-        r, _ := restClient.VaultListSecrets()
-        log.Println("OK")
-
-        ps := &Search{Result: *r}
-        win.Mount(ps)
-
-        return
-
-    } else {
+    if err != nil {
         log.Println(err)
+        return
     }
 
-    app.Render(h)
+    log.Println("Unlocked.")
+
+    // Signal to UI that the token was unlocked.
+    pass.Locked = false
+
+    // Setup the client for communication.
+    restClient = rest.New(&lock)
+    restClient.Init(config.Host, config.Port, config.CA)
+    restClient.Unlock(config.Encrypted.Token)
+
+    // Fetch the data from server.
+    log.Println("Fetching data.")
+    r, err := restClient.VaultListSecrets()
+
+    if err != nil {
+        log.Println(err)
+        return
+    }
+
+    // Clear config to free up memory.
+    config = util.Configuration{}
+
+    // Mount search window.
+    log.Println("OK", r)
+    ps := &Search{Result: *r}
+    win.Mount(ps)
+
+    //app.Render(h)
 }
 
 func init() {

@@ -32,6 +32,7 @@ package main
 
 import (
     "fmt"
+    "log"
     "github.com/murlokswarm/app"
     "pass/rest"
     "strings"
@@ -103,11 +104,17 @@ func (h *Search) Render() string {
 
 func (h *Search) Prefetch(query string) {
     // Fetch from Vault.
-    r, _ := restClient.VaultListSecrets()
-    h.Result = *r
+    r, err := restClient.VaultListSecrets()
 
     // Update query field.
     h.Query = query
+
+    if err != nil {
+        log.Println(err)
+        return
+    }
+
+    h.Result = *r
 }
 
 func (h *Search) DoSearchQuery(arg app.ChangeArg) {

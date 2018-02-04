@@ -35,6 +35,7 @@ import (
     "net/url"
     "pass/otp"
     "pass/rest"
+    "log"
 )
 
 type OTP struct {
@@ -86,11 +87,16 @@ func (h *OTP) OnHref(URL *url.URL) {
     // encrypted name).
     u := URL.Query()
     h.Title = u.Get("Name")
-    restResponse := restClient.VaultReadSecret(
+    restResponse, err := restClient.VaultReadSecret(
         &rest.Name{
             Text:      h.Title,
             Encrypted: u.Get("Encrypted"),
         })
+
+    if err != nil {
+        log.Println(err)
+        return
+    }
 
     // Read contents from data segment.
     h.Data = *restResponse

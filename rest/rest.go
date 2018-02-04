@@ -41,6 +41,7 @@ import (
     "net/http"
     "pass/lock"
     "time"
+    "errors"
 )
 
 type (
@@ -105,10 +106,10 @@ type Client struct {
 func New(lock *lock.Lock) Client {
 
     r := Client{
-        LocalUpdate:    false,
+        LocalUpdate:    true,
         Client:         nil,
         Lock:           lock,
-        DecryptedToken: "zzz",
+        DecryptedToken: "",
     }
 
     return r
@@ -250,14 +251,14 @@ func (r *Client) IsTagUpdated() bool {
     return tagUpdated
 }
 
-func (r *Client) VaultReadSecret(data *Name) *DecodedEntry {
+func (r *Client) VaultReadSecret(data *Name) (*DecodedEntry, error) {
     log.Println("READ")
 
     // Retrieve data for a specific account.
     vaultResponse, err := r.Request(http.MethodGet, "/"+(*data).Encrypted, nil)
 
     if err != nil {
-        log.Fatal(err)
+        return nil, err
     }
 
     // Decrypt
@@ -265,13 +266,17 @@ func (r *Client) VaultReadSecret(data *Name) *DecodedEntry {
 
     // ...generate a DecodedEntry struct...
     decodedEntry := DecodedEntry{}
-    json.Unmarshal([]byte(decryptedData), &decodedEntry)
+    err = json.Unmarshal([]byte(decryptedData), &decodedEntry)
+
+    if err != nil {
+        return nil, err
+    }
 
     // ...with the proper information...
     decodedEntry.Name = data
 
     // ...and return to caller.
-    return &decodedEntry
+    return &decodedEntry, nil
 }
 
 func (r *Client) VaultWriteSecret(data *DecodedEntry) error {
@@ -295,26 +300,22 @@ func (r *Client) VaultWriteSecret(data *DecodedEntry) error {
     }
 
     // Encode data as JSON...
-    jsonUserData, err := json.Marshal(userData)
+    jsonUserData, _ := json.Marshal(userData)
 
     // ...and encrypt.
-    encryptedUserData, err := r.EncBase64(string(jsonUserData))
+    encryptedUserData, _ := r.EncBase64(string(jsonUserData))
 
     if (*data).Name.Encrypted == "" {
-        (*data).Name.Encrypted, err = r.EncHex((*data).Name.Text)
-    }
-
-    if err != nil {
-        return err
+        (*data).Name.Encrypted, _ = r.EncHex((*data).Name.Text)
     }
 
     vaultRequestEncrypted := MyRequestEncrypted{
         Encrypted: encryptedUserData,
     }
-    jsonVaultRequestEncrypted, err := json.Marshal(vaultRequestEncrypted)
+    jsonVaultRequestEncrypted, _ := json.Marshal(vaultRequestEncrypted)
 
     // Create the actual request.
-    _, err = r.Request(http.MethodPut, "/"+(*data).Name.Encrypted,
+    _, err := r.Request(http.MethodPut, "/"+(*data).Name.Encrypted,
         bytes.NewBuffer(jsonVaultRequestEncrypted))
 
     if err != nil {
@@ -351,6 +352,10 @@ func (r *Client) VaultListSecrets() (*[]Name, error) {
 
         if err != nil {
             return nil, err
+        }
+
+        if len(vaultResponse.Errors) > 0 {
+            return nil, errors.New(vaultResponse.Errors[0])
         }
 
         r.SearchResult = make([]Name, 0)

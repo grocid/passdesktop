@@ -43,7 +43,6 @@ import (
 
 type Sign struct {
     Title        string
-    Query        string
     PublicBase64 string
     Keys         KeyPair
     Data         rest.DecodedEntry
@@ -55,6 +54,10 @@ type KeyPair struct {
 }
 
 var keyPair KeyPair
+
+const (
+    SignatureFileExtension = ".signature"
+)
 
 func (h *Sign) Render() string {
     var gen string
@@ -84,11 +87,16 @@ func (h *Sign) Render() string {
                         margin-right: auto;
                         margin-top: -webkit-calc(20vh - 20px);">
             ` + GetFingerprint(keyPair.Pub, 255, 90, 60) + `
-            <h1>{{.Title}}</h1>
+                <h1>{{.Title}}</h1>
+
+                <h2>Public key</h2>
+                <input type="text" 
+                     value="{{.PublicBase64}}" 
+                     readonly="readonly"
+                     class="editable username"/>
             </div>
-          <h2>Public key</h2>
-          <p class="selectable" style="text-align: center">{{html .PublicBase64}}</p>
           </div>
+
           <div class="bottom-toolbar">
               <div>
                   <button class="button ok" onclick="OK"/>` +
@@ -108,13 +116,18 @@ func (h *Sign) OnHref(URL *url.URL) {
     // encrypted name).
     u := URL.Query()
     h.Title = u.Get("Name")
-    restResponse := restClient.VaultReadSecret(
+    restResponse, err := restClient.VaultReadSecret(
         &rest.Name{
             Text:      h.Title,
             Encrypted: u.Get("Encrypted"),
         })
-    h.Data = *restResponse
 
+    if err != nil {
+        log.Println(err)
+        return
+    }
+
+    h.Data = *restResponse
     json.Unmarshal(h.Data.File, &keyPair)
     h.PublicBase64 = base64.StdEncoding.EncodeToString(keyPair.Pub)
 
@@ -129,6 +142,8 @@ func (h *Sign) OK() {
 }
 
 func (h *Sign) Generate() {
+    // By passing nil as argument, we default to
+    // crypto/rand, which is desirable.
     pub, priv, err := ed25519.GenerateKey(nil)
 
     if err != nil {
@@ -141,14 +156,24 @@ func (h *Sign) Generate() {
         Pub:  pub,
     }
 
+    // We will store the key pair as JSON in the
+    // the space where we would store file data.
     jsonKeyPair, err := json.Marshal(&keyPair)
     h.Data.File = jsonKeyPair
-    restClient.VaultWriteSecret(&h.Data)
+
+    // Write it to remote.
+    err = restClient.VaultWriteSecret(&h.Data)
+
+    if err != nil {
+        log.Println(err)
+        return
+    }
 
     app.Render(h)
 }
 
 func (h *Sign) Cancel() {
+    keyPair = KeyPair{}
     NavigateBack("")
 }
 
@@ -160,16 +185,32 @@ func (h *Sign) Sign() {
         NoFile:            false,
         OnPick: func(filenames []string) {
             // Get contents of file.
-            fileData, _ := ioutil.ReadFile(filenames[0])
+            fileData, err := ioutil.ReadFile(filenames[0])
 
             // If there was an error, probably due
             // to permissions, dump error message
             // to log.
+            if err != nil {
+                log.Println(err)
+                return
+            }
+
+            // Generate signature from private key.
             signature := ed25519.Sign(
                 ed25519.PrivateKey(keyPair.Priv),
                 fileData)
 
-            ioutil.WriteFile(filenames[0]+".signature", signature, 0644)
+            // Write to signature file, which is
+            // the file we are signing + the
+            // .signature file extension.
+            err = ioutil.WriteFile(
+                filenames[0]+SignatureFileExtension, 
+                signature, 0644)
+
+            if err != nil {
+                log.Println(err)
+                return
+            }
 
             app.Render(h)
         },
@@ -177,14 +218,18 @@ func (h *Sign) Sign() {
 }
 
 func (h *Sign) DoSearchQuery(arg app.ChangeArg) {
+    keyPair = KeyPair{}
     NavigateBack(arg.Value)
 }
 
 func (h *Sign) Delete() {
+    keyPair = KeyPair{}
     d := h.Data.Name
+
     if d != nil {
         restClient.VaultDeleteSecret(&h.Data)
     }
+
     h.Cancel()
 }
 
