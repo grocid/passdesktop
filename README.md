@@ -87,6 +87,14 @@ Pass has an option to generate Ed25519 key pairs for signing and verification. T
 
 ![Sign](doc/sign.png)
 
+## Other capabilites
+
+It is pretty easy to implement another type of entry. If you want feature X, look at any implemented type.
+
+## Can I connect with other users?
+
+Although it would be nice to create shared areas in Vault (e.g. for sharing a Netflix account), there is no such option as of now. Direct communcation between clients is advised against, since that is a quite servere attack vector. The client will only talk to an authenticated server. If the server is overtaken by a malicious party then it could -- potentially -- inject data. This may or may not pose a threat, in case there is some bug in the REST implementation or in Golangs libraries.
+
 ## Why use two encryption layers?
 
 It may therefore seem unncessary to encrypt data twice. If you are running a secured instance of Vault -- then probably -- yes. What comes into play here is the distribution of cryptographic keys. If you are running a pure Vault setup, then your server knows all the secrets. You will not be able to read data from disk, since Vault does in-memory decryption, but if you get hold of a token or a memory dump or can leak memory using recent attacks, then your data is in trouble.
@@ -101,6 +109,7 @@ So, why have I decided to use Vault as the storage? Vault is widely used softwar
  - (*Slightly deprecated*) To use root token or regular tokens: when sharing a server with multiple users and associated (disjoint) storage areas, different tokens are needed and, hence, root token cannot be used. In even in single-user mode, use of root token is not recommended.
  - (*Slightly deprecated*) Trusting a third-party server. The holder of the root token (or a group/individual holding of the unseal keys) will be able to read all data stored in Vault. However, Vault is quite light weight and can, for a limited amount of users, be run on a mere Raspberry Pi gen A. I would suggest that each user runs Vault on their own Raspberry Pi at home. Secrets can be shared over several VPS instances and providers using secret sharing. While at a higher cost, it would give higher security and accessibility (as a e.g. (3, 2) scheme would require only two out of three servers to be online).
  - If the password has a lot lower entropy than 256 bits, then the iteration count / Argon2 parameters need to be increased considerably if you are planning on leaking your config file.
+ - No communication with other clients, only authenticated servers.
 
 ### Possible leaks
 
