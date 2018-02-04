@@ -87,6 +87,8 @@ Pass has an option to generate Ed25519 key pairs for signing and verification. T
 
 ![Sign](doc/sign.png)
 
+The Base64-encoded text shown above is your public key. It can be distributed and is used to verify the signature.
+
 ### Other capabilites
 
 It is pretty easy to implement another type of entry. If you want feature X, look at any implemented type.
