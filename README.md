@@ -4,7 +4,7 @@
 
 Pass Desktop is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Hashicorp Vault](https://www.vaultproject.io) (from now on called just Vault), where all accounts with associated usernames and passwords are stored. Any instance of Vault can be used, no additional setup. So if you are already running Vault, just generate a token and you are ready to go.
 
-## Encrypted data
+### Encrypted data
 
 Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with ChaCha20-Poly1305 (for which there are basically no attacks at this date). The encryption key is derived as 
 
@@ -64,7 +64,7 @@ Pass perfoms, at every query, real-time decryption of the content. No data is ex
 
 ![Decrypting token](doc/decryptingtoken.png)
 
-## OTP
+### OTP
 
 Vault has an option for OTP, in which case the shared secret is stored inside Vault. The drawback here is that it will rely only on the AES-GCM wall, which of course might be enough. On the other hand, if the security of the server is comprimised any such data will leak.
 
@@ -74,30 +74,22 @@ As a consequence, Pass stores the shared secret in Vault as a normal entry (whic
 ![OTP](doc/otp.png)
 
 
-## Files
+### Files
 
 It is possible to store files in the same way as user credentials are stored. Files are then downloaded and decrypted on the local computer. Due to limitations in Vault, the maximum file size is 512 kB.
 
 ![File](doc/file.png)
 
 
-## Signing keys
+### Signing keys
 
 Pass has an option to generate Ed25519 key pairs for signing and verification. To sign a file, simply press the signing button (marked in the screenshot below) and select a file. A new file containing the signature will be generated, with the file ending `.signature`.
 
 ![Sign](doc/sign.png)
 
-## Other capabilites
+### Other capabilites
 
 It is pretty easy to implement another type of entry. If you want feature X, look at any implemented type.
-
-## Can I connect with other users?
-
-Although it would be nice to create shared areas in Vault (e.g. for sharing a Netflix account), there is no such option as of now. Direct communcation between clients is advised against, since that is a quite servere attack vector. The client will only talk to an authenticated server. If the server is overtaken by a malicious party then it could -- potentially -- inject data. This may or may not pose a threat, in case there is some bug in the REST implementation or in Golangs libraries.
-
-## Why use two encryption layers?
-
-It may therefore seem unncessary to encrypt data twice. If you are running a secured instance of Vault -- then probably -- yes. What comes into play here is the distribution of cryptographic keys. If you are running a pure Vault setup, then your server knows all the secrets. You will not be able to read data from disk, since Vault does in-memory decryption, but if you get hold of a token or a memory dump or can leak memory using recent attacks, then your data is in trouble.
 
 So, why have I decided to use Vault as the storage? Vault is widely used software for storing secrets and exists in many production environments. It is reasonably fast (I would say, about as fast a normal database). Pass Desktop should be a plug-and-play experience. Nonetheless, if one would like to use a different kind of storage, rewriting the operations to another database is smooth sailin' ;-)
 
@@ -111,6 +103,10 @@ So, why have I decided to use Vault as the storage? Vault is widely used softwar
  - If the password has a lot lower entropy than 256 bits, then the iteration count / Argon2 parameters need to be increased considerably if you are planning on leaking your config file.
  - No communication with other clients, only authenticated servers.
 
+ ### Why use two encryption layers?
+
+It may seem unncessary to encrypt data twice. If you are running a secured instance of Vault -- then probably -- yes. What comes into play here is the distribution of cryptographic keys. If you are running a pure Vault setup, then your server knows all the secrets. You will not be able to read data from disk, since Vault does in-memory decryption, but if you get hold of a token or a memory dump or can leak memory using recent attacks, then your data is in trouble.
+
 ### Possible leaks
 
 When an Apple computer goes into hibernation (not regular sleep), in-memory contents are transferred to disk. The Filevault key itself can be recovered when device is in sleep (default for desktops), or deep/hybrid sleep, or whatever they call it (default for laptops), so presumably the token is also somewhere. The difference (in description) between hybrid and full hibernation is only that memory power is disconnected, so it might mean that in the hibernation file you also have all keys. And there is also a, notably non-standard, option to wipe the Filevault key each time the system goes to standby. By default Apple do not wipe the key -- this is usability consideration -- user gets faster response from system and no annoying passwords are needed.
@@ -119,11 +115,16 @@ There is the ```pmset somethingVaultKeysomethingsomething``` setting. If you are
 
 What about Spectre and Meltdown? Pass Desktop is agnostic to these attacks. If the operating system is vulnerable, your memory will leak no matter what.
 
+### Can I connect with other users?
+
+Although it would be nice to create shared areas in Vault (e.g. for sharing a Netflix account), there is no such option as of now. Direct communcation between clients is advised against, since that is a quite servere attack vector. The client will only talk to an authenticated server. If the server is overtaken by a malicious party then it could -- potentially -- inject data. This may or may not pose a threat, in case there is some bug in the REST implementation or in Golangs libraries.
+
 ### How to sync between devices
 
 If you created an App with macpack, then you can simply copy the App, because the configuration file  will be included. It is therefore totally inappropriate to distribute the App.
 
 If you build pass in another way, the file `config.json` needs to be copied to the target computer. Even though the token in the configuration file is encrypted, I suggest not storing the it on insecure media like Dropbox or unencrypted mail.
+
 
 ## Performance
 
