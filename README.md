@@ -4,6 +4,8 @@
 
 Pass Desktop is a GUI for [pass](https://github.com/grocid/pass), but completely independent of it. It communicates with [Hashicorp Vault](https://www.vaultproject.io) (from now on called just Vault), where all accounts with associated usernames and passwords are stored. Any instance of Vault can be used, no additional setup. So if you are already running Vault, just generate a token and you are ready to go.
 
+So, why have I decided to use Vault as the storage? Vault is widely used software for storing secrets and exists in many production environments. It is reasonably fast (I would say, about as fast a normal database). Pass Desktop should be a plug-and-play experience. Nonetheless, if one would like to use a different kind of storage, rewriting the operations to another database is smooth sailin' ;-)
+
 ### Encrypted data
 
 Pass is password protected on the local computer, by storing an `encrypted token` on disk, along with a `nonce` and `salt`. The `token` is encrypted with ChaCha20-Poly1305 (for which there are basically no attacks at this date). The encryption key is derived as 
@@ -92,8 +94,6 @@ The Base64-encoded text shown above is your public key. It can be distributed an
 ### Other capabilites
 
 It is pretty easy to implement another type of entry. If you want feature X, look at any implemented type.
-
-So, why have I decided to use Vault as the storage? Vault is widely used software for storing secrets and exists in many production environments. It is reasonably fast (I would say, about as fast a normal database). Pass Desktop should be a plug-and-play experience. Nonetheless, if one would like to use a different kind of storage, rewriting the operations to another database is smooth sailin' ;-)
 
 ## Seurity considerations
 
