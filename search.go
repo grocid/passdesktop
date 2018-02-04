@@ -90,7 +90,7 @@ func (h *Search) Render() string {
         }
     }
 
-    // Just to make the could look a bit cleaner.
+    // Just to make the code look a bit cleaner.
     filteredNameList = filteredNameList + `
                 </ul>
             </div>
